@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/license-MIT-6FA0FF" alt="MIT licence">
   <img src="https://img.shields.io/badge/rust-2024%20edition-101A3E" alt="Rust 2024 edition">
   <img src="https://img.shields.io/badge/MCP%20tools-25-3D6BE0" alt="25 MCP tools">
-  <img src="https://img.shields.io/badge/tests-507-3D6BE0" alt="507 tests">
+  <img src="https://img.shields.io/badge/tests-512-3D6BE0" alt="512 tests">
   <img src="https://img.shields.io/badge/retrieval%20MRR-1.00-3D6BE0" alt="Retrieval MRR 1.00 on the fixture set">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-101A3E" alt="macOS, Linux and Windows">
 </p>
@@ -200,7 +200,10 @@ all take one maintenance lock before they write, so only one of them runs at a t
 each diagram.
 
 The Markdown files are the source of truth. The state folder holds only things derived from them: the graph cache
-(`graph.db`), note vectors, the indexing manifest and the Librarian's state. Delete it and Enigma rebuilds it.
+(`graph.db`), note vectors and the indexing manifest. Delete it and Enigma rebuilds those, though the next index
+run has the model read every note again. Two things in the folder are not derived: the organizer's undo history,
+which is lost with it, and the Librarian's state, without which the next nightly run asks for
+`--confirm-first-run` again.
 More detail is in [docs/architecture.md](docs/architecture.md).
 
 ### How search works
@@ -348,9 +351,11 @@ The skills are in [`skills/`](skills/) and are compiled into the binary. `enigma
 
 You need:
 
-- A Rust toolchain that supports the 2024 edition (1.85 or newer).
+- Rust 1.89 or newer.
 - An Obsidian vault.
-- The `claude` or `codex` command on your `PATH`. Enigma uses it to extract entities from notes.
+- The `claude` or `codex` command on your `PATH`. Enigma uses it to extract entities from notes. The default is
+  `codex`; to use Claude, set `ENIGMA_EXTRACTOR=claude` for the commands below and in the server's environment.
+- `uv`, if you register the two companion servers: `mcp-sync` starts them with `uvx`.
 - The embedding model in your local Hugging Face cache. Enigma never downloads it.
 
 ### macOS
@@ -367,6 +372,8 @@ Fetch the embedding model once (three files, 34 MB):
 pip install -U huggingface_hub && hf download TaylorAI/bge-micro-v2 config.json tokenizer.json model.safetensors
 ```
 
+If your system Python refuses `pip install`, run it inside a virtual environment or use `pipx`.
+
 Install the vault guides and the `Claude/` folders. Existing files are never overwritten:
 
 ```bash
@@ -379,12 +386,16 @@ Optionally install the pinned Obsidian plugins. Preview first:
 ./target/release/enigma-mcp provision "/path/to/vault" --check
 ```
 
+If the list is what you want, run the same command without `--check`.
+
 Register Enigma and its two companion servers (`fetch` and `arxiv`, used by `/clip`) with Claude Code.
 `--check` shows what would be registered and changes nothing:
 
 ```bash
 ENIGMA_VAULT_PATH="/path/to/vault" ./target/release/enigma-mcp mcp-sync --check
 ```
+
+Then run it again without `--check` to register them.
 
 Install the skills and the session hooks:
 
@@ -422,18 +433,22 @@ pip install -U huggingface_hub; hf download TaylorAI/bge-micro-v2 config.json to
 .\target\release\enigma-mcp.exe install-conventions "C:\path\to\vault"
 $env:ENIGMA_VAULT_PATH = "C:\path\to\vault"
 .\target\release\enigma-mcp.exe mcp-sync --check
+.\target\release\enigma-mcp.exe mcp-sync
 .\target\release\enigma-mcp.exe skill-sync
 $env:ENIGMA_EXTRACTOR = "claude"
 .\target\release\enigma-mcp.exe index "C:\path\to\vault"
 ```
 
+`mcp-sync --check` previews; the line after it registers. Repeat `index` until its output shows `"remaining": 0`.
 Note paths are written with `/` inside Enigma on every system, so a note is `Claude/Index.md` on Windows too.
 
 ## MCP client configuration
 
 The server is the binary with no arguments. It reads its settings from environment variables and needs one:
-`ENIGMA_VAULT_PATH`. Give each agent its own `ENIGMA_AGENT_NAME` so every note says who wrote it, and point them all
-at the same `ENIGMA_STATE_DIR` so they share one index.
+`ENIGMA_VAULT_PATH`. Give each agent its own `ENIGMA_AGENT_NAME` so every note says who wrote it. Agents that point
+at the same vault share one index without further setup, because the state folder is derived from the vault's
+path. Set `ENIGMA_STATE_DIR` only to move that folder, and then give every agent, and the commands you run by
+hand, the same value.
 
 **Claude Code.** `mcp-sync` does this for you. By hand:
 
@@ -449,7 +464,6 @@ command = "/path/to/enigma-mcp"
 
 [mcp_servers.enigma.env]
 ENIGMA_VAULT_PATH = "/path/to/vault"
-ENIGMA_STATE_DIR = "/Users/you/.enigma-mcp/main"
 ENIGMA_AGENT_NAME = "codex"
 HF_HUB_OFFLINE = "1"
 ```
@@ -465,7 +479,6 @@ HF_HUB_OFFLINE = "1"
         "args": [],
         "env": {
           "ENIGMA_VAULT_PATH": "/path/to/vault",
-          "ENIGMA_STATE_DIR": "/Users/you/.enigma-mcp/main",
           "ENIGMA_AGENT_NAME": "openclaw",
           "ENIGMA_NO_TOOL_APPLY": "1",
           "HF_HUB_OFFLINE": "1"
@@ -606,8 +619,9 @@ answers are known:
 | success@5 | success@10 | MRR |
 |---|---|---|
 | 0.97 | 1.00 | 0.84 |
-For your own vault, create a private golden set with `enigma-mcp evals --init-live --vault <vault>` and
-run `enigma-mcp evals --live`.
+
+For your own vault, create a private golden set with `ENIGMA_VAULT_PATH=<vault> enigma-mcp evals --init-live` and
+run `ENIGMA_VAULT_PATH=<vault> enigma-mcp evals --live`.
 
 ### Speed
 
@@ -641,7 +655,7 @@ spec/         the behaviour specification the code is written from
   acceptance/   one file of acceptance cases per area
   constitution/ the vault guides installed by install-conventions
   fixtures/     the fixture vault and golden queries used by tests and evals
-tests/        508 tests, one file per area of the specification
+tests/        512 tests, one file per area of the specification
 docs/         architecture and other guides
 AGENTS.md     setup instructions for AI agents
 assets/       logo and diagrams

@@ -59,6 +59,16 @@ const STOP_SIGNALS: [libc::c_int; 3] = [libc::SIGINT, libc::SIGTERM, libc::SIGHU
 #[cfg(windows)]
 const STOP_SIGNALS: [libc::c_int; 2] = [libc::SIGINT, libc::SIGTERM];
 
+/// A Windows command line as it is searched: lowercased, without quotes or `.exe` (15 §9 step 5).
+pub fn windows_command(cmd: &str) -> String {
+    cmd.to_lowercase().replace('"', "").replace(".exe", "")
+}
+
+/// True when a process's command line is an `enigma-mcp index` run.
+fn runs_index(cmd: &str) -> bool {
+    if cfg!(windows) { windows_command(cmd).contains("enigma-mcp index ") } else { cmd.contains("enigma-mcp index ") }
+}
+
 /// The last SIGINT/SIGTERM/SIGHUP received while the lock is held (0: none).
 static SIGNAL: AtomicI32 = AtomicI32::new(0);
 
@@ -145,7 +155,7 @@ pub fn run(vault: &Path, state_dir: Option<&Path>, exe: &Path) -> u8 {
 
 fn rounds(vault: &Path, state_dir: Option<&Path>, exe: &Path, lock: &Path) -> u8 {
     let me = std::process::id();
-    if processes().iter().any(|(pid, cmd)| *pid != me && cmd.contains("enigma-mcp index ")) {
+    if processes().iter().any(|(pid, cmd)| *pid != me && runs_index(cmd)) {
         println!("indexer already running; skipping");
         return 0;
     }
@@ -167,4 +177,17 @@ fn rounds(vault: &Path, state_dir: Option<&Path>, exe: &Path, lock: &Path) -> u8
     }
     println!("[{}] index-nightly done", stamp());
     0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn windows_command_lines_are_normalised() {
+        // NT-12: quotes and .exe would otherwise hide a running indexer on Windows
+        let cmd = windows_command(r#""C:\Tools\Enigma-MCP.exe" index C:\vault"#);
+        assert!(cmd.contains("enigma-mcp index "), "{cmd}");
+        assert!(!windows_command(r#""C:\Tools\enigma-mcp.exe" index-nightly C:\vault"#).contains("enigma-mcp index "));
+    }
 }

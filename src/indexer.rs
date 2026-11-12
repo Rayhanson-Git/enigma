@@ -68,10 +68,10 @@ impl Manifest {
         Ok(m)
     }
 
-    /// Save: plain overwrite, indented File JSON without a trailing newline.
+    /// Save: temp file then rename, indented File JSON without a trailing newline.
     pub fn save(&self, state_dir: &Path) -> Result<()> {
         let p = Self::path(state_dir);
-        std::fs::write(&p, crate::json::indented(self)).map_err(|e| Error::io(&e, &p))
+        crate::vault::replace_file(&p, crate::json::indented(self).as_bytes()).map_err(|e| Error::io(&e, &p))
     }
 
     /// rename_manifest_entry(old, new) (06 §2).

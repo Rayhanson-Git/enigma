@@ -552,6 +552,8 @@ cases:
       - {signal: "INT, TERM or HUP to the runner's pid alone, during a round whose extractor takes 2 s", then: "the round is not cut short; when it ends the runner terminates by that signal (no exit code; a shell sees 128 + N); LOCK is removed; no further extractor call or round; no done line"}
       - {signal: "INT, TERM or HUP to the runner's whole process group, during a round whose extractor would take 30 s", then: "everything stops at once (well under 30 s); the runner terminates by that signal; LOCK is removed; no done line"}
 
+  - id: NT-12 Windows command line
+    then: "windows_command lowercases a command line and removes every quote and .exe, so a quoted enigma-mcp.exe index run is recognised and index-nightly is not mistaken for it"
   - id: NT-09 launchd templates
     then:
       - "two templates with placeholders {BIN} (EXE), {VAULT} and {HOME}; labels com.enigma.index and com.enigma.librarian"

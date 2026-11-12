@@ -188,7 +188,7 @@ pub fn template(e: &Entity, aliases: &[String], now: &NaiveDateTime) -> String {
 
 /// Rewrites a note's frontmatter mapping in flow-leaf style, keeping the rest.
 pub fn rewrite_frontmatter(text: &str, meta: &[(Y, Y)]) -> Option<String> {
-    let end = text.get(3..)?.find("\n---")? + 3;
+    let end = crate::vault::fence_end(text)?; // only a note that starts with frontmatter has one to rewrite
     Some(format!("---\n{}---{}", dump_flow_leaf(meta), &text[end + 4..]))
 }
 
@@ -497,6 +497,9 @@ impl Graph {
         }
         let mut frontier: Vec<usize> = (0..reached.len()).collect();
         for hop in 2..=hops.max(1) as usize {
+            if frontier.is_empty() {
+                break; // nothing left to expand: a huge hops value must not spin
+            }
             let mut next = Vec::new();
             for &i in &frontier {
                 let (ent, chain) = (reached[i].0.clone(), reached[i].2.clone());

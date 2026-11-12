@@ -182,6 +182,8 @@ fn graph_gc_03() {
     rebuild(&v, &db).unwrap();
     let g = Graph::load(&db).unwrap();
     let r = g.related("Projects/Seed.md", 2, 20).unwrap();
+    // GS-14: hops far beyond the graph's depth returns at once, with the same rows
+    assert_eq!(g.related("Projects/Seed.md", i64::MAX, 20).unwrap(), g.related("Projects/Seed.md", 50, 20).unwrap());
     assert_eq!(r[0]["path"], "Projects/Direct.md");
     assert!(r[0]["via"].as_str().unwrap().contains("Orbital Freight"));
     let three = g.related("Projects/Seed.md", 2, 3).unwrap();
@@ -340,4 +342,13 @@ fn graph_gs_13() {
     assert_eq!(str_list(get(&meta, "aliases")), ["Orbital Co", "ORB Inc"]);
     assert!(t.contains("Back again.") && t.contains("## Mentions"));
     assert!(matches!(get(&meta, "entity"), Some(Y::Str(s)) if s == "organization"));
+}
+
+#[test]
+fn graph_gs_15() {
+    // a note with no frontmatter has none to rewrite, even when its body holds a --- rule
+    let plain = "# Orbital Freight\n\nA company.\n\n---\n\nMore.\n\n## Mentions\n\n## Relations\n";
+    assert!(enigma_mcp::graph::rewrite_frontmatter(plain, &[]).is_none());
+    let with = "---\nentity: organization\n---\n\n# Orbital Freight\n";
+    assert!(enigma_mcp::graph::rewrite_frontmatter(with, &[]).unwrap().ends_with("---\n\n# Orbital Freight\n"));
 }

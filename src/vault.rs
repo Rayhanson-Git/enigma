@@ -260,6 +260,16 @@ fn write_once(f: &mut fs::File, mut buf: &[u8], op: &'static str) -> io::Result<
     Ok(())
 }
 
+/// Replaces a state file through "{name}.tmp" and a rename, so a crash leaves the old file or the new one.
+pub(crate) fn replace_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let tmp = path.with_file_name(format!("{name}.tmp"));
+    fs::write(&tmp, bytes)?;
+    retry("state_replace", || fs::rename(&tmp, path)).inspect_err(|_| {
+        let _ = fs::remove_file(&tmp);
+    })
+}
+
 /// Lenient text read of a walked note (00 §3.1).
 pub fn read_lenient(path: &Path) -> Result<String> {
     let bytes = fs::read(path).map_err(|e| Error::io(&e, path))?;
@@ -269,7 +279,7 @@ pub fn read_lenient(path: &Path) -> Result<String> {
 // ------------------------------------------------------------ frontmatter
 
 /// Index of the closing "\n---" when the text has frontmatter (03 §6, Q4).
-fn fence_end(text: &str) -> Option<usize> {
+pub(crate) fn fence_end(text: &str) -> Option<usize> {
     if !text.starts_with("---") {
         return None;
     }

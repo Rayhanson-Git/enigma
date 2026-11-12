@@ -26,7 +26,9 @@ normative statement of its load, save and rename rules.
   `failures` key becomes an empty map. A failure value that is a plain string
   `s` becomes `{"error": s, "attempts": 1}`. Entries for the *caretaker notes*
   `Claude/Organizer.md` and `Claude/Librarian.md` are dropped from both maps.
-- **Save**: plain overwrite (not atomic) in the format of 16 §6. Map
+- **Save**: written to `manifest.json.tmp` beside it, then renamed over it (the
+  rename under the lock retry rule of 03 §5.1), in the format of 16 §6, so a
+  crash never leaves a half-written manifest. Map
   entries keep insertion order.
 - **rename_manifest_entry(old, new)**: in each map that has `old`, move its value
   to `new` (removed from its old position, appended at the end). Save only if

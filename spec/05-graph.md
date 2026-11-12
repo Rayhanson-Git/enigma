@@ -269,7 +269,8 @@ The table definitions and column meanings are specified once, in 16 §4.
 2. lookup = path without `.md`. Seeds = `entity_path` of mention rows whose
    `note_path` = lookup, in row order. Each seed is *reached* at hop 1 with chain =
    its name (entity row name, else last path component minus extension).
-3. Repeat `max(0, hops − 1)` times, hop increasing from 2: for each entity in
+3. Repeat `max(0, hops − 1)` times, hop increasing from 2, stopping early once a
+   round reaches no new entity (later rounds could add nothing): for each entity in
    the frontier (in order), list neighbours = edges where it is `src_path`
    (yielding (rel, dst_path)) united with edges where it is `dst_path` (yielding
    (rel, src_path)), as a de-duplicated set ordered ascending by (rel,

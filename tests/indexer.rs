@@ -452,3 +452,15 @@ fn indexer_ix_24() {
     assert_eq!(c.processed, 4);
     assert!(!Graph::load(&st.path().join("graph.db")).unwrap().find("orbital", None).is_empty());
 }
+
+#[test]
+fn indexer_ix_25() {
+    // the manifest is replaced through a temp file, and none is left behind
+    let d = mini_vault();
+    let st = tempfile::tempdir().unwrap();
+    go(&d, st.path(), &Fake::default(), &Options::default());
+    let saved = Manifest::load(st.path()).unwrap();
+    saved.save(st.path()).unwrap();
+    assert!(!st.path().join("manifest.json.tmp").exists());
+    assert_eq!(Manifest::load(st.path()).unwrap().hashes, saved.hashes);
+}

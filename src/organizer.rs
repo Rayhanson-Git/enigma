@@ -312,7 +312,7 @@ fn update_block(v: &Vault, state_dir: &Path, sugg: &mut Suggestions, ticked: &[(
     }
     if *sugg != before {
         let p = state_dir.join(SUGGESTIONS_FILE);
-        std::fs::write(&p, crate::json::indented(&*sugg)).map_err(|e| Error::io(&e, &p))?;
+        crate::vault::replace_file(&p, crate::json::indented(&*sugg).as_bytes()).map_err(|e| Error::io(&e, &p))?;
     }
     Ok(())
 }

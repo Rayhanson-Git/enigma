@@ -41,3 +41,5 @@ cases:
   - {id: GS-11, then: "remove_mention removes only the given note's line; second call false"}
   - {id: GS-12, then: "find_entity_note follows merged_into to the canonical; a dead-end redirect returns the stub itself"}
   - {id: GS-13, given: "retired entity with alias 'ORB Inc'", when: "upsert with alias 'Orbital Co' and summary 'Back again.'", then: "same path, created true, no 'retired' key, aliases {Orbital Co, ORB Inc}, body has 'Back again.' and '## Mentions'"}
+  - {id: GS-14, when: "related_notes with hops far beyond the graph's depth (the largest integer)", then: "returns at once with the same rows as a hops value just past the depth"}
+  - {id: GS-15, given: "an entity note with no frontmatter whose body contains a --- rule", when: "new aliases arrive for it", then: "the note is left untouched (rewrite_frontmatter yields nothing)"}

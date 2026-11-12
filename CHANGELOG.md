@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- `related_notes` and `context_bundle` stop as soon as there is nothing left to follow, so a very large `hops`
+  value returns at once. Results are unchanged.
+- `manifest.json` and the organizer's suggestions file are replaced through a temp file and a rename, so a crash
+  cannot leave them half written.
+- Adding aliases to an entity note that has no frontmatter no longer rewrites text above a `---` rule.
+- Windows: a running `enigma-mcp.exe index` is now recognised by the nightly runner.
+- Very large frontmatter mappings parse in linear time.
+- Docs: the minimum Rust version is 1.89 (now also set in `Cargo.toml`); the quick start shows the real install
+  commands after each preview; the state folder section says what is lost with it; the shared-index and
+  `evals` instructions match the code; `uv` and the default extractor are listed as prerequisites.
+- CI runs with a read-only token.
+
 ## 1.3.0
 
 - **Windows support.** Enigma builds and passes its tests on Windows as well as macOS and Linux. Behaviour on

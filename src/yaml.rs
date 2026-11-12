@@ -232,10 +232,20 @@ fn finish_seq(items: Vec<Y>, tag: Option<Tag>) -> Built {
 
 fn finish_map(merged: Vec<Vec<(Y, Y)>>, own: Vec<(Y, Y)>, tag: Option<Tag>) -> Built {
     let mut out: Vec<(Y, Y)> = Vec::new();
+    let mut strings: HashMap<String, usize> = HashMap::new(); // position of each string key, so a huge mapping is not quadratic
     for (k, v) in merged.into_iter().flatten().chain(own) {
-        match out.iter_mut().find(|(ek, _)| *ek == k) {
-            Some(slot) => slot.1 = v,
-            None => out.push((k, v)),
+        let at = match &k {
+            Y::Str(s) => strings.get(s).copied(),
+            _ => out.iter().position(|(ek, _)| *ek == k),
+        };
+        match at {
+            Some(i) => out[i].1 = v,
+            None => {
+                if let Y::Str(s) = &k {
+                    strings.insert(s.clone(), out.len());
+                }
+                out.push((k, v));
+            }
         }
     }
     match tag.as_ref().map(|t| std_tag(t).ok_or(Fail::Yaml)).transpose()? {
@@ -839,6 +849,13 @@ pub fn dump_flow_leaf(pairs: &[(Y, Y)]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn duplicate_keys_keep_first_position_and_last_value() {
+        // string keys go through an index, other keys through a scan; both must behave the same
+        let Some(Y::Map(m)) = parse_doc("a: 1\nb: 2\n3: x\na: 9\n3: y\n").unwrap() else { panic!("not a map") };
+        assert_eq!(m, vec![(Y::Str("a".into()), Y::Int(9)), (Y::Str("b".into()), Y::Int(2)), (Y::Int(3), Y::Str("y".into()))]);
+    }
 
     trait Get {
         fn get(&self, key: &str) -> Option<&Y>;

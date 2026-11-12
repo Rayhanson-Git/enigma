@@ -121,8 +121,9 @@ flowchart TB
 ## One rule: the notes are the truth
 
 Everything Enigma knows is in the vault as Markdown. Search indexes, vectors and the graph database are derived
-from the notes and live in a separate state folder. If that folder is lost, Enigma rebuilds it. Nothing in it
-needs to be synced or backed up.
+from the notes and live in a separate state folder. If that folder is lost, Enigma rebuilds them. The organizer's
+undo history is the one file there that cannot be rebuilt, and after a loss the Librarian asks for a confirmed
+first run again. Nothing in the folder needs to be synced.
 
 | File in the state folder | What it holds | Rebuilt by |
 |---|---|---|

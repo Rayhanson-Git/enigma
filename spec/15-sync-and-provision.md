@@ -452,7 +452,9 @@ file `pid` with the runner's pid and LF. STAMP = second stamp.
    space) is running → print `indexer already running; skipping`, exit 0.
    The process list is `ps -Ao pid=,command=` on POSIX and the `Win32_Process`
    class, read through PowerShell, on Windows; a list that cannot be read
-   counts as empty.
+   counts as empty. On Windows a command line is lowercased and has every `"`
+   and `.exe` removed before it is searched, so `"C:\…\enigma-mcp.exe" index …`
+   matches.
 6. Up to 20 rounds: run `EXE index VAULT` (default batch, no flags) capturing
    stdout and stderr together. Non-zero exit (e.g. LockBusy while a Librarian
    sweep holds the caretaker lock) → print the last 5 lines of its output,
