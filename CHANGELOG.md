@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- README: the graph time-lapse now shows nodes spawning, moving and linking before they settle into the real layout.
+- README: the graph time-lapse now grows out from the centre, with nodes moving and linking before they settle into
+  the real layout. Banner, feature strip, diagrams and badges use a blue scheme that matches the graph.
 
 ## 1.2.1
 

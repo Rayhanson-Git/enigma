@@ -4,7 +4,7 @@ This page explains how Enigma MCP is put together. The exact behaviour of every 
 this is the overview.
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#132A20", "primaryTextColor": "#F2EDE4", "primaryBorderColor": "#4F8068", "lineColor": "#8A8780", "clusterBkg": "#0B1A13", "clusterBorder": "#3B453F", "titleColor": "#F2EDE4", "edgeLabelBackground": "#0B1A13", "tertiaryTextColor": "#F2EDE4"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#E6ECFF", "primaryBorderColor": "#6FA0FF", "lineColor": "#8FA3D6", "clusterBkg": "#090D28", "clusterBorder": "#25315F", "titleColor": "#E6ECFF", "edgeLabelBackground": "#090D28", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart TB
   subgraph callers["Who calls it"]
     agents["Agents<br/>Claude Code, Codex, OpenClaw, Hermes"]
@@ -94,10 +94,10 @@ flowchart TB
   class agents,you,cron,web outside
   class server,cli,lib entry
   class md,gnotes,sc,vec,db,man,jr,ls store
-  classDef outside fill:#1F1F1F,stroke:#8A8780,color:#F2EDE4
-  classDef entry fill:#3A1211,stroke:#C92A28,color:#F2EDE4
-  classDef store fill:#0F2018,stroke:#4F8068,color:#F2EDE4
-  classDef stop fill:#1F1F1F,stroke:#C92A28,color:#F2EDE4
+  classDef outside fill:#0B1130,stroke:#8FA3D6,color:#E6ECFF
+  classDef entry fill:#16245C,stroke:#6FA0FF,color:#E6ECFF
+  classDef store fill:#0B1130,stroke:#5ED0E6,color:#E6ECFF
+  classDef stop fill:#0B1130,stroke:#9DBBFF,color:#E6ECFF
 ```
 
 ## One rule: the notes are the truth
@@ -121,7 +121,7 @@ needs to be synced or backed up.
 ## Search
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#132A20", "primaryTextColor": "#F2EDE4", "primaryBorderColor": "#4F8068", "lineColor": "#8A8780", "clusterBkg": "#0B1A13", "clusterBorder": "#3B453F", "titleColor": "#F2EDE4", "edgeLabelBackground": "#0B1A13", "tertiaryTextColor": "#F2EDE4"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#E6ECFF", "primaryBorderColor": "#6FA0FF", "lineColor": "#8FA3D6", "clusterBkg": "#090D28", "clusterBorder": "#25315F", "titleColor": "#E6ECFF", "edgeLabelBackground": "#090D28", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   q(["search_brain<br/>query, tags, folder, limit"]) --> walk["Walk the vault<br/>skip .obsidian, .trash, .git"]
   walk --> filt{"Tags or folder given?"}
@@ -150,10 +150,10 @@ flowchart LR
 
   class q,out entry
   class rrf entry
-  classDef outside fill:#1F1F1F,stroke:#8A8780,color:#F2EDE4
-  classDef entry fill:#3A1211,stroke:#C92A28,color:#F2EDE4
-  classDef store fill:#0F2018,stroke:#4F8068,color:#F2EDE4
-  classDef stop fill:#1F1F1F,stroke:#C92A28,color:#F2EDE4
+  classDef outside fill:#0B1130,stroke:#8FA3D6,color:#E6ECFF
+  classDef entry fill:#16245C,stroke:#6FA0FF,color:#E6ECFF
+  classDef store fill:#0B1130,stroke:#5ED0E6,color:#E6ECFF
+  classDef stop fill:#0B1130,stroke:#9DBBFF,color:#E6ECFF
 ```
 
 1. **Candidates.** Every note in the vault, or the subset matching the tag and folder filters.
@@ -204,7 +204,7 @@ If any step fails, the files already changed are restored. Notes under `Claude/`
 ## The Librarian
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#132A20", "primaryTextColor": "#F2EDE4", "primaryBorderColor": "#4F8068", "lineColor": "#8A8780", "clusterBkg": "#0B1A13", "clusterBorder": "#3B453F", "titleColor": "#F2EDE4", "edgeLabelBackground": "#0B1A13", "tertiaryTextColor": "#F2EDE4"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#E6ECFF", "primaryBorderColor": "#6FA0FF", "lineColor": "#8FA3D6", "clusterBkg": "#090D28", "clusterBorder": "#25315F", "titleColor": "#E6ECFF", "edgeLabelBackground": "#090D28", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   start(["enigma-mcp librarian"]) --> first{"Has this vault<br/>ever had a run?"}
   first -->|"no, and no<br/>--confirm-first-run"| refuse["Stop: do a --dry-run first"]
@@ -227,10 +227,10 @@ flowchart LR
 
   class start,ok entry
   class refuse,busy,bad stop
-  classDef outside fill:#1F1F1F,stroke:#8A8780,color:#F2EDE4
-  classDef entry fill:#3A1211,stroke:#C92A28,color:#F2EDE4
-  classDef store fill:#0F2018,stroke:#4F8068,color:#F2EDE4
-  classDef stop fill:#1F1F1F,stroke:#C92A28,color:#F2EDE4
+  classDef outside fill:#0B1130,stroke:#8FA3D6,color:#E6ECFF
+  classDef entry fill:#16245C,stroke:#6FA0FF,color:#E6ECFF
+  classDef store fill:#0B1130,stroke:#5ED0E6,color:#E6ECFF
+  classDef stop fill:#0B1130,stroke:#9DBBFF,color:#E6ECFF
 ```
 
 | Step | What it does |
