@@ -5,6 +5,7 @@ cases:
   - {id: BM-03, given: "{common.md: 'the the the the the project project', rare.md: 'zephyr appears exactly once here'}", when: "rank 'zephyr'", then: "first is rare.md"}
   - {id: BM-04, then: "empty corpus -> []; unknown term -> []"}
   - {id: BM-05, then: "10 identical docs, limit 3 -> 3 results"}
+  - {id: BM-06, then: "a long note repeating 'varroa' 400 times ranks below the short note titled 'Varroa Mites' for the query 'varroa mites'; a note is found by a title word its text never uses"}
   - {id: SE-01, then: "note iteration never yields .obsidian paths; folder 'Claude' yields only Claude/ paths"}
   - {id: SE-02, then: "unfiltered candidates include Projects/Lighthouse Grid.md and Daily.md"}
   - {id: SE-03, then: "tags [grid] -> [Projects/Lighthouse Grid.md]; tags [GRID] same; tags [grid, project] non-empty; tags [grid, nope] -> []"}

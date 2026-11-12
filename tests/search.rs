@@ -31,6 +31,15 @@ fn hy(d: &tempfile::TempDir, emb: &dyn Embedder, q: &str, tags: Option<&[String]
 }
 
 #[test]
+fn search_bm_06() {
+    // a long note that repeats a word many times does not beat the short note about that word
+    let long = format!("{} filler words about other things entirely", "varroa ".repeat(400));
+    assert_eq!(ranked(&[("Chat Export.md", long.as_str()), ("Varroa Mites.md", "how to count and treat them in a hive")], "varroa mites", 5)[0], "Varroa Mites.md");
+    // title words count even when the text never repeats them
+    assert_eq!(ranked(&[("a.md", "notes on bees"), ("Boiler Service.md", "annual check, booked for spring")], "boiler", 5), ["Boiler Service.md"]);
+}
+
+#[test]
 fn search_bm_01() {
     assert_eq!(tokenize("Lighthouse-Grid Pipeline!"), ["lighthouse", "grid", "pipeline"]);
 }

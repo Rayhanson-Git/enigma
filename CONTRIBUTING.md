@@ -18,7 +18,7 @@ The tests load the real embedding model. Put it in your Hugging Face cache once:
 pip install -U huggingface_hub && hf download TaylorAI/bge-micro-v2 config.json tokenizer.json model.safetensors
 ```
 
-A clean test run is 504 passing tests and no clippy warnings. CI runs the same on macOS and Ubuntu.
+A clean test run is 507 passing tests and no clippy warnings. CI runs the same on macOS and Ubuntu.
 
 ## How a change is made
 

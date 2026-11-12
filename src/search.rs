@@ -84,6 +84,8 @@ pub fn tokenize(text: &str) -> Vec<String> {
 const K1: f64 = 1.5;
 const B: f64 = 0.75;
 const DELTA: f64 = 0.5;
+/// A note's title words count this many extra times: the title says what the note is about.
+const TITLE_WEIGHT: usize = 3;
 
 /// rank(corpus, query, limit) (04 §4).
 pub fn rank(corpus: &[(String, String)], query: &str, limit: usize) -> Vec<(String, f64)> {
@@ -92,10 +94,13 @@ pub fn rank(corpus: &[(String, String)], query: &str, limit: usize) -> Vec<(Stri
     }
     let docs: Vec<HashMap<String, usize>> = corpus
         .iter()
-        .map(|(_, t)| {
+        .map(|(rel, t)| {
             let mut tf = HashMap::new();
             for tok in tokenize(t) {
                 *tf.entry(tok).or_insert(0) += 1;
+            }
+            for tok in tokenize(stem_of(rel)) {
+                *tf.entry(tok).or_insert(0) += TITLE_WEIGHT;
             }
             tf
         })
@@ -123,7 +128,7 @@ pub fn rank(corpus: &[(String, String)], query: &str, limit: usize) -> Vec<(Stri
                 }
                 let idf = (n + 1.0).ln() - (dft as f64 + 0.5).ln();
                 let c = tf / (1.0 - B + B * dl / avgdl);
-                score += idf * tf * (K1 + 1.0) * (c + DELTA) / (K1 + c + DELTA);
+                score += idf * (K1 + 1.0) * (c + DELTA) / (K1 + c + DELTA);
             }
             (rel.clone(), score)
         })

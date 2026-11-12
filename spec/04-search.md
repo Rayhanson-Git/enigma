@@ -64,7 +64,10 @@ letters split tokens.
 **rank(corpus, query, limit)** with corpus an ordered `rel → text` map:
 
 1. Empty corpus: `[]`.
-2. Tokenize every document (in corpus order) and the query.
+2. Tokenize every document (in corpus order) and the query. A document's
+   tokens are those of its text, followed by the tokens of its title (the
+   file name without `.md`) three more times: the title says what the note
+   is about, so its words weigh more.
 3. N = number of documents; dl(d) = token count of d; avgdl = total tokens /
    N; df(t) = number of documents containing t; tf(t, d) = occurrences of t
    in d.
@@ -72,11 +75,12 @@ letters split tokens.
    corpus; a query token that occurs nowhere has idf 0.
 5. score(d) = sum over the query tokens q, **in order and with repeats**, of
 
-   idf(q) × tf(q, d) × (k1 + 1) × (c + delta) / (k1 + c + delta),
+   idf(q) × (k1 + 1) × (c + delta) / (k1 + c + delta),
    where c = tf(q, d) / (1 − b + b × dl(d) / avgdl).
 
    All arithmetic is 64-bit floating point. A document without q gets 0 for
-   that term. If avgdl is 0 the scores are NaN and nothing passes step 7.
+   that term. The score levels off as tf grows, so a very long note cannot
+   win only because it repeats a word many times. If avgdl is 0 the scores are NaN and nothing passes step 7.
 6. Sort documents by score descending, stable (equal scores keep corpus
    order).
 7. Keep scores strictly greater than 0; return the first limit
