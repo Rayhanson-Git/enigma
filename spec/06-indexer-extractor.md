@@ -71,7 +71,7 @@ from `hashes` (or is absent there) or it has any failure record.
      first 300 characters of E, attempts: previous attempts + 1}` (previous =
      0 when none), where E is the message for an ExtractorError and
      `{Kind}: {message}` (00 §5) for every other kind, e.g.
-     `DecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte`;
+     `DecodeError: invalid UTF-8: byte 0xff at offset 0: not a valid first byte`;
      failed += 1; next path. Errors never stop the run: the note is retried
      on later runs (pending_notes, §3) until it is benched at `MAX_ATTEMPTS`,
      and `retry_failures` clears the records. Work already done for that
@@ -137,7 +137,7 @@ not objects are skipped):
 - name = display() of `name` (null/false/0/empty → empty), trimmed; empty → drop.
 - type = display() of `type`, trimmed, lower-cased; not a known type → `topic`.
 - aliases = each element of `aliases` (null/absent → none) as display(), trimmed,
-  empties dropped. A string value is iterated character by character (quirk).
+  empties dropped. A string value is iterated character by character (edge case).
 - summary = display() of `summary` (falsy → empty), trimmed.
 Result order: `{name, type, aliases, summary}`.
 
@@ -291,7 +291,7 @@ Tests inject the process runner and the PATH lookup.
 
 ---
 
-## 6. Known quirks (kept on purpose)
+## 6. Edge cases (intended)
 
 1. A string `aliases` value is split into single characters; a null alias
    element becomes `None`.
@@ -299,7 +299,7 @@ Tests inject the process runner and the PATH lookup.
    it is benched at 3 attempts.
 3. The manifest save is not atomic.
 
-(The earlier quirk "errors other than ExtractorError abort the whole run
+(The earlier rule "errors other than ExtractorError abort the whole run
 without saving the manifest" was dropped after v1: see §4, run errors.)
 
 ## 7. Acceptance map

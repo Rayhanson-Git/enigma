@@ -391,7 +391,7 @@ fn indexer_ix_22() {
     let c = go(&d, st.path(), &ex, &Options::default());
     assert_eq!((c.failed, c.processed), (2, 4));
     let m = Manifest::load(st.path()).unwrap();
-    assert!(m.failures["Bad.md"].error.starts_with("DecodeError: 'utf-8' codec can't decode byte 0xff in position 0"), "{}", m.failures["Bad.md"].error);
+    assert!(m.failures["Bad.md"].error.starts_with("DecodeError: invalid UTF-8: byte 0xff at offset 0"), "{}", m.failures["Bad.md"].error);
     assert!(m.failures["Locked.md"].error.starts_with("IoError: "), "{}", m.failures["Locked.md"].error);
     assert!(m.hashes.contains_key("Daily.md") && !m.hashes.contains_key("Bad.md"));
     let c = go(&d, st.path(), &ex, &Options::default());

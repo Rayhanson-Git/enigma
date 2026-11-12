@@ -88,7 +88,7 @@ the context block (no trailing newline) when `--context` is given, nothing
 otherwise. Any runtime error is swallowed: no output, exit 0. Only argument
 parsing errors exit 2. The session-start hook relies on this (15 §5).
 
-## 6. Known quirks (kept on purpose)
+## 6. Edge cases (intended)
 
 1. A frontmatter `project:` with an empty value contributes `None` to the
    session haystack, so a query `none` matches it.

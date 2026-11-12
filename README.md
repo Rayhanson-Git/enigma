@@ -7,13 +7,13 @@
 <p align="center"><b>One memory for all your AI agents, kept as plain notes in your Obsidian vault.</b></p>
 
 <p align="center">
-  <a href="https://github.com/Rayhanson-Git/Enigma-MCP/actions/workflows/ci.yml"><img src="https://github.com/Rayhanson-Git/Enigma-MCP/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Rayhanson-Git/enigma/actions/workflows/ci.yml"><img src="https://github.com/Rayhanson-Git/enigma/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/license-MIT-A31C1B" alt="MIT licence">
   <img src="https://img.shields.io/badge/rust-2024%20edition-171717" alt="Rust 2024 edition">
   <img src="https://img.shields.io/badge/MCP%20tools-25-1E3A2C" alt="25 MCP tools">
   <img src="https://img.shields.io/badge/tests-502-1E3A2C" alt="502 tests">
   <img src="https://img.shields.io/badge/retrieval%20MRR-1.00-1E3A2C" alt="Retrieval MRR 1.00 on the fixture set">
-  <img src="https://img.shields.io/badge/platform-macOS-171717" alt="macOS">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20untested%20%7C%20Windows%20soon-171717" alt="macOS; Linux untested; Windows coming soon">
 </p>
 
 <p align="center">
@@ -61,7 +61,9 @@ What you get that a vector database behind an MCP wrapper does not give you:
 
 Version 1.1.0. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
 Built and tested on macOS (Apple silicon). Linux should work, because the code only uses POSIX calls, but it has not been
-run there yet. Windows is not supported. Scheduling uses launchd, so the `schedule` command is macOS only.
+run there yet. Scheduling uses launchd, so the `schedule` command is macOS only.
+
+> **Windows: coming soon.** Enigma does not build on Windows yet. Support is the next item on the roadmap.
 
 The organizer and the Librarian change files. Run them with `--dry-run` first; the Librarian refuses its first real
 run on a vault until you have done so.
@@ -298,8 +300,8 @@ You need:
 ### macOS
 
 ```bash
-git clone https://github.com/Rayhanson-Git/Enigma-MCP
-cd Enigma-MCP
+git clone https://github.com/Rayhanson-Git/enigma
+cd enigma
 cargo build --release
 ```
 

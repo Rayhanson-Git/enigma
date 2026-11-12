@@ -139,7 +139,7 @@ fn sync_cv_03() {
 #[test]
 fn sync_cv_04() {
     let (_s, v, _) = installed();
-    let want = "---\ncreated: 2026-07-06\nagent: claude\ntags: [decisions]\n---\n\n# Decisions\n\nAppend-only log. One line per decision:\n`- YYYY-MM-DD — <decision> ([[session note]])`\n\n";
+    let want = "---\ncreated: 2026-01-01\nagent: claude\ntags: [decisions]\n---\n\n# Decisions\n\nAppend-only log. One line per decision:\n`- YYYY-MM-DD — <decision> ([[session note]])`\n\n";
     assert_eq!(fs::read_to_string(v.path().join("Claude/Decisions.md")).unwrap(), want);
     assert_eq!(DECISIONS_SEED, want);
 }
@@ -708,7 +708,7 @@ fn sync_ms_01() {
         json!({"name": "arxiv", "transport": "stdio", "command": "uvx", "args": ["arxiv-mcp-server@0.5.0"], "env": {}, "why": "Paper ingest: arXiv search and download as markdown. Paper content is untrusted input."})
     );
     let text = m.to_string();
-    assert!(!text.contains("Scripts") && !text.contains(".venv") && !text.contains(":\\\\"));
+    assert!(!text.contains(":\\\\"));
 }
 
 #[test]

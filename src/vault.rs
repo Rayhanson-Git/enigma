@@ -76,7 +76,7 @@ fn dir_error(rel: &str) -> Error {
 }
 
 fn exists_error(rel: &str) -> Error {
-    Error::new(Kind::NoteExists, format!("'{rel}' already exists. Pass overwrite=True to replace it."))
+    Error::new(Kind::NoteExists, format!("'{rel}' already exists. Pass overwrite=true to replace it."))
 }
 
 impl Vault {
@@ -108,7 +108,7 @@ impl Vault {
         let target = self.resolve(rel)?;
         if !confirm && !self.in_claude(&target) {
             return Err(Error::vault(format!(
-                "'{rel}' is outside Claude/. Pass confirm_outside_claude=True only when the user explicitly asked for this write."
+                "'{rel}' is outside Claude/. Pass confirm_outside_claude=true only when the user explicitly asked for this write."
             )));
         }
         if target.is_dir() {
@@ -231,7 +231,7 @@ fn fence_end(text: &str) -> Option<usize> {
 }
 
 /// parse(text): the frontmatter mapping as (key, value) pairs; {} when absent
-/// or invalid; Err only for quirk Q5.
+/// or invalid; Err only for edge case Q5.
 pub fn parse(text: &str) -> Result<Vec<(Y, Y)>> {
     let Some(end) = fence_end(text) else { return Ok(vec![]) };
     Ok(match parse_doc(&text[3..end])? {

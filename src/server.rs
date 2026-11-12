@@ -343,7 +343,7 @@ impl Server {
             "context_bundle" => Ret::Obj(self.context_bundle(&v, &state()?, a)?),
             "index_brain" => {
                 if a.b("force") {
-                    refuse_apply("index_brain(force=True)", "enigma-mcp index <vault> --force")?;
+                    refuse_apply("index_brain(force=true)", "enigma-mcp index <vault> --force")?;
                 }
                 let st = state()?;
                 let _lock = lock::acquire(&st)?;
@@ -356,7 +356,7 @@ impl Server {
                 let st = state()?;
                 let apply = a.b("apply");
                 let _lock = if apply {
-                    refuse_apply("consolidate_graph(apply=True)", "enigma-mcp consolidate <vault> --apply")?;
+                    refuse_apply("consolidate_graph(apply=true)", "enigma-mcp consolidate <vault> --apply")?;
                     Some(lock::acquire(&st)?)
                 } else {
                     None
@@ -377,7 +377,7 @@ impl Server {
                 let st = state()?;
                 let apply = a.b("apply");
                 let _lock = if apply {
-                    refuse_apply("organize_vault(apply=True)", "enigma-mcp organize <vault>")?;
+                    refuse_apply("organize_vault(apply=true)", "enigma-mcp organize <vault>")?;
                     Some(lock::acquire(&st)?)
                 } else {
                     None

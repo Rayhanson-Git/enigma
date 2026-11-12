@@ -7,7 +7,7 @@ description: Checks the health of the Enigma vault without changing anything, an
 
 Requires the `enigma` MCP server.
 
-This skill inspects. It does not fix. Any call with `apply=True` happens
+This skill inspects. It does not fix. Any call with `apply=true` happens
 only after the user has read the report and asked for it.
 
 ## How to run it
@@ -18,9 +18,9 @@ only after the user has read the report and asked for it.
    proposals. A last run older than 48 hours puts `⚠ stale sweep` at the
    top of the report.
 2. **Graph.** `graph_stats()` for the totals. Then
-   `consolidate_graph(apply=False)`: report how many merges it suggests
+   `consolidate_graph(apply=false)`: report how many merges it suggests
    and quote the first three as returned.
-3. **Filing.** `organize_vault(apply=False)`: report how many suggestions
+3. **Filing.** `organize_vault(apply=false)`: report how many suggestions
    there are and give three as `note → suggested folder`.
 4. **Tasks.** `list_tasks()`: report the number open. Quote any that are
    overdue or plainly duplicated. Leave them as they are.
@@ -35,6 +35,6 @@ only after the user has read the report and asked for it.
 6. **Offer next steps.** Suggest one for each red or yellow finding, and
    create an `add_task` only for those the user accepts. Merging and moving
    need the user's explicit word; they then use the same tools with
-   `apply=True`.
+   `apply=true`.
 7. **Do not save the report.** It describes one moment. If the user wants
    it on record, add it to the day's `log_session`.

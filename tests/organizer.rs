@@ -372,7 +372,7 @@ fn organizer_or_22() {
     let log = read(&d, LOG_NOTE);
     let (a, b) = (log.find(BLOCK_START).unwrap(), log.find(BLOCK_END).unwrap() + BLOCK_END.len());
     let edited = format!(
-        "{}Harvey above the block.\n{}junk typed inside\n{}\nHarvey between.\n{}Harvey after the log.\n",
+        "{}Owner above the block.\n{}junk typed inside\n{}\nOwner between.\n{}Owner after the log.\n",
         &log[..a],
         &log[a..b - BLOCK_END.len()],
         &log[b - BLOCK_END.len()..b],
@@ -382,7 +382,7 @@ fn organizer_or_22() {
     write_file(d.path(), "Fusion Two Orbit Kitchen.md", "orbit recipe two");
     sweep_on(&d, st.path(), true, 6);
     let log = read(&d, LOG_NOTE);
-    for kept in ["Harvey above the block.\n", "\nHarvey between.\n", "Harvey after the log.\n", "## Log\n"] {
+    for kept in ["Owner above the block.\n", "\nOwner between.\n", "Owner after the log.\n", "## Log\n"] {
         assert!(log.contains(kept), "{kept:?} in {log}");
     }
     assert!(!log.contains("junk typed inside"));

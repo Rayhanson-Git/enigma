@@ -50,7 +50,7 @@ Writes and appends to a path that is not inside Claude/ require
 `confirm_outside_claude=true`; otherwise they fail with VaultError:
 
 ```text
-'{rel}' is outside Claude/. Pass confirm_outside_claude=True only when the user explicitly asked for this write.
+'{rel}' is outside Claude/. Pass confirm_outside_claude=true only when the user explicitly asked for this write.
 ```
 
 (rel as given; the single quotes and `True` are literal.) Callers may pass
@@ -94,7 +94,7 @@ first failure wins:
 2. Quarantine (§3) — outside-Claude error.
 3. If the path is a directory: VaultError `'{rel}' is a directory, not a note.`
 4. If the path exists (following symlinks) and `overwrite` is false:
-   NoteExists `'{rel}' already exists. Pass overwrite=True to replace it.`
+   NoteExists `'{rel}' already exists. Pass overwrite=true to replace it.`
 
 Then:
 
@@ -160,7 +160,7 @@ Concurrent appends of whole lines never interleave or overwrite each other.
 
 **Fence detection.** A note has frontmatter when its text starts with `---`
 and the substring `\n---` occurs at or after index 3. Let end be the index of
-the first such occurrence. (Quirk Q4: the first line may be `---x`, and
+the first such occurrence. (Edge case Q4: the first line may be `---x`, and
 `\n----` closes.)
 
 **parse(text)** returns a mapping:
@@ -172,10 +172,10 @@ the first such occurrence. (Quirk Q4: the first line may be `---x`, and
 3. YAML syntax or construction error: `{}`. A document that is not a
    mapping (scalar, list, empty): `{}`.
 4. A scalar that matches the timestamp pattern but is not a valid calendar
-   value fails the whole calling operation with InvalidArgument (quirk Q5):
-   `day is out of range for month`, `month must be in 1..12`,
-   `year 0 is out of range`, `hour must be in 0..23`,
-   `minute must be in 0..59` or `second must be in 0..59`.
+   value fails the whole calling operation with InvalidArgument (edge case Q5):
+   `that day does not exist in that month`, `the month must be between 1 and 12`,
+   `the year must be 1 or later`, `the hour must be between 0 and 23`,
+   `the minute must be between 0 and 59` or `the second must be between 0 and 59`.
 5. Duplicate keys: the last occurrence wins.
 
 **body(text)**: if the note has frontmatter, the text after the 4 characters
@@ -325,15 +325,15 @@ M is one of `10`–`12`, `01`–`09`, `1`–`9` (tried in that order), D is one 
 
 | Case | Message |
 |---|---|
-| no match at the start | `time data {quoted(due)} does not match format '%Y-%m-%d'` |
-| match leaves characters | `unconverted data remains: {rest}` |
-| day beyond month length | `day is out of range for month` |
-| year 0000 | `year 0 is out of range` |
+| no match at the start | `{quoted(due)} is not a date in the form YYYY-MM-DD` |
+| match leaves characters | `unexpected text after the date: {rest}` |
+| day beyond month length | `that day does not exist in that month` |
+| year 0000 | `the year must be 1 or later` |
 
 Examples: `2026-07-10` and `2026-7-5` are valid; `tomorrow` gives
-`time data 'tomorrow' does not match format '%Y-%m-%d'`; `2026-07-100` gives
-`unconverted data remains: 0`; `2026-02-30` gives
-`day is out of range for month`.
+`'tomorrow' is not a date in the form YYYY-MM-DD`; `2026-07-100` gives
+`unexpected text after the date: 0`; `2026-02-30` gives
+`that day does not exist in that month`.
 
 **list_tasks(include_done, folder)**: walk notes (04 §2, scoped to folder when
 given, which is resolved per §2 and may escape-fail), read each leniently, split

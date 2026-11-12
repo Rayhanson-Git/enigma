@@ -22,7 +22,7 @@ line records that it does.
    do not record the new one: two contradictory lines would both be
    returned by later searches.
 3. **Add one line at the end.** Write the file back with
-   `write_note(overwrite=True)`, unchanged except for the new last line.
+   `write_note(overwrite=true)`, unchanged except for the new last line.
    Match the style the file uses. If it has none yet:
    `- YYYY-MM-DD <decision> — <reason in one line>`, and when step 2
    applied, append ` (supersedes YYYY-MM-DD "<old decision>")`.

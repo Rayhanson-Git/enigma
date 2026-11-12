@@ -34,7 +34,7 @@ walk(folder) yields `(absolute path, rel path)` pairs:
    sensitive on POSIX, case-insensitive on Windows). Names starting with a
    dot match and dot-folders are descended into. Symbolic links to files are
    included; symbolic links to directories are not descended into. A
-   directory whose name ends in `.md` is also yielded (quirk Q11). A base
+   directory whose name ends in `.md` is also yielded (edge case Q11). A base
    that does not exist or is not a directory yields nothing.
 3. rel = the path relative to the **vault root** (not to base), components
    joined with `/`.
@@ -184,7 +184,7 @@ hybrid(query, tags = null, folder = null, limit = 20) → list of
 4. Vectors V = note_vectors(note_texts, persist = true) where note_texts is
    corpus when there is no filter (tags null or empty and folder null or
    empty), and not given otherwise — a filtered search therefore reads and
-   may embed the **whole vault** (quirk Q8).
+   may embed the **whole vault** (edge case Q8).
 5. q = the embedding of query (always computed, even for an empty query).
 6. Vector lane S: for each `(rel, vec)` of V in V's order with rel in the
    candidate set, score cosine(vec, q); sort by score descending (stable);
@@ -192,7 +192,7 @@ hybrid(query, tags = null, folder = null, limit = 20) → list of
 7. Lanes = [K, S]; if K is empty, append the substring lane (below).
 8. fused = RRF(lanes), then take `fused[:limit]` with slice semantics:
    limit ≥ 0 keeps the first limit items; a negative limit drops |limit|
-   items from the end (quirk Q7).
+   items from the end (edge case Q7).
 9. Return `{"path": rel, "excerpt": excerpt(text, rel, query)}` for each.
 
 **RRF(lanes)**: for each lane in order, for each item at 1-based rank r,

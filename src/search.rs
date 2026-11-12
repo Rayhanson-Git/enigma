@@ -363,7 +363,7 @@ fn stem_of(rel: &str) -> &str {
     &last[..cut]
 }
 
-/// Slice-style limit (quirk Q7).
+/// Slice-style limit (edge case Q7).
 pub fn slice<T>(mut v: Vec<T>, limit: i64) -> Vec<T> {
     let keep = if limit >= 0 { (limit as usize).min(v.len()) } else { v.len().saturating_sub(limit.unsigned_abs() as usize) };
     v.truncate(keep);

@@ -213,7 +213,7 @@ Used by the MCP tool `consolidate_graph(apply = false)` (02-tools, lock and
 Librarian uses blocking and adjudication incrementally (08 §3.5) and never
 applies merges.
 
-## 6. Known quirks (kept on purpose)
+## 6. Edge cases (intended)
 
 1. `merged_entities` counts proposed duplicates, including any skipped during
    apply (missing note, already a stub).

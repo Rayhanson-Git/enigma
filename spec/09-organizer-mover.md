@@ -249,7 +249,7 @@ Applying sweeps run under the caretaker lock (taken by the CLI `organize`
 without `--dry-run`, by `organize_vault(apply = true)` and by the Librarian).
 Dry runs and `undo_move` do not take it.
 
-## 7. Known quirks (kept on purpose)
+## 7. Edge cases (intended)
 
 1. Only path-qualified links are rewritten; bare `[[Stem]]` links are relied on
    to stay unique through the duplicate-stem guard.

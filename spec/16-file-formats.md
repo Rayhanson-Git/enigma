@@ -78,7 +78,7 @@ Conversions:
 - **timestamp**: date-only form → a date. Date-time form → a date-time with
   the fraction's first 6 digits as microseconds (right-padded with zeros), a
   `Z` suffix meaning UTC, `±HH[:MM]` a fixed offset, no suffix a value
-  without offset. Impossible values raise InvalidArgument (03 §6, quirk Q5).
+  without offset. Impossible values raise InvalidArgument (03 §6, edge case Q5).
 
 ### 2.3 Emission
 

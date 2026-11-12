@@ -285,7 +285,7 @@ The table definitions and column meanings are specified once, in 16 §4.
 
 ---
 
-## 4. Known quirks (kept on purpose)
+## 4. Edge cases (intended)
 
 1. **Substring section headers** (00 Q1). `section` finds the header by
    plain substring: `## Mentions` inside a summary or in a heading such as

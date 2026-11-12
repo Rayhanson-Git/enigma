@@ -78,11 +78,11 @@ pub fn decode_strict(bytes: &[u8]) -> Result<&str, String> {
         let pos = e.valid_up_to();
         let b = bytes[pos];
         let reason = match e.error_len() {
-            None => "unexpected end of data",
-            Some(_) if !(0xC2..=0xF4).contains(&b) => "invalid start byte",
-            Some(_) => "invalid continuation byte",
+            None => "the text ends mid-character",
+            Some(_) if !(0xC2..=0xF4).contains(&b) => "not a valid first byte",
+            Some(_) => "not a valid continuation byte",
         };
-        format!("'utf-8' codec can't decode byte 0x{b:02x} in position {pos}: {reason}")
+        format!("invalid UTF-8: byte 0x{b:02x} at offset {pos}: {reason}")
     })
 }
 
@@ -279,9 +279,9 @@ mod tests {
 
     #[test]
     fn decode_messages() {
-        assert_eq!(decode_strict(b"ab\xff").unwrap_err(), "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte");
-        assert_eq!(decode_strict(b"\xe4A").unwrap_err(), "'utf-8' codec can't decode byte 0xe4 in position 0: invalid continuation byte");
-        assert_eq!(decode_strict(b"a\xe4").unwrap_err(), "'utf-8' codec can't decode byte 0xe4 in position 1: unexpected end of data");
+        assert_eq!(decode_strict(b"ab\xff").unwrap_err(), "invalid UTF-8: byte 0xff at offset 2: not a valid first byte");
+        assert_eq!(decode_strict(b"\xe4A").unwrap_err(), "invalid UTF-8: byte 0xe4 at offset 0: not a valid continuation byte");
+        assert_eq!(decode_strict(b"a\xe4").unwrap_err(), "invalid UTF-8: byte 0xe4 at offset 1: the text ends mid-character");
         assert_eq!(decode_lenient(b"a\xffb"), "ab");
     }
 }

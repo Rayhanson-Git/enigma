@@ -17,7 +17,7 @@ skills!("clip", "connections", "decide", "digest", "distill", "dossier", "recall
 
 pub const FOLDERS: [&str; 5] = ["Claude/Inbox", "Claude/Sessions", "Claude/Concepts", "Claude/Answers", "Claude/Digests"];
 pub const INDEX_SEED: &str = "# Index\n\nMap of agent-written notes. Session entries append below.\n\n";
-pub const DECISIONS_SEED: &str = "---\ncreated: 2026-07-06\nagent: claude\ntags: [decisions]\n---\n\n# Decisions\n\nAppend-only log. One line per decision:\n`- YYYY-MM-DD \u{2014} <decision> ([[session note]])`\n\n";
+pub const DECISIONS_SEED: &str = "---\ncreated: 2026-01-01\nagent: claude\ntags: [decisions]\n---\n\n# Decisions\n\nAppend-only log. One line per decision:\n`- YYYY-MM-DD \u{2014} <decision> ([[session note]])`\n\n";
 
 fn write(path: &Path, text: &str) -> Result<()> {
     if let Some(parent) = path.parent() {

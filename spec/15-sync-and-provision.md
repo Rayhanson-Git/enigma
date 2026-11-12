@@ -40,7 +40,7 @@ Compiled into the binary byte for byte from the source tree:
 
 ```text
 ---
-created: 2026-07-06
+created: 2026-01-01
 agent: claude
 tags: [decisions]
 ---

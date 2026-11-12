@@ -206,7 +206,7 @@ fn cleanup_step(v: &Vault, st: &Path, state: &mut Map<String, Value>, apply: boo
 pub fn backstop_due(marker: Option<&Value>, now: &NaiveDateTime) -> Result<bool> {
     let Some(m) = marker.and_then(Value::as_str).filter(|m| !m.is_empty()) else { return Ok(false) };
     let then = NaiveDateTime::parse_from_str(m, "%Y-%m-%d %H:%M:%S")
-        .map_err(|_| Error::invalid(format!("time data {} does not match format '%Y-%m-%d %H:%M:%S'", crate::text::quote_str(m))))?;
+        .map_err(|_| Error::invalid(format!("{} is not a time in the form YYYY-MM-DD HH:MM:SS", crate::text::quote_str(m))))?;
     Ok((*now - then).num_days() >= BACKSTOP_MIN_INTERVAL_DAYS)
 }
 
@@ -269,7 +269,7 @@ fn check(f: impl FnOnce() -> Result<Value>) -> Value {
 /// Health checks (08 §4), each isolated.
 pub fn health(v: &Vault, st: &Path, state: &Map<String, Value>, steps: &Map<String, Value>, errors: &Map<String, Value>) -> Map<String, Value> {
     let mut h = Map::new();
-    // the sweep writes the caretaker notes after the index step embedded the vault (Q23)
+    // the sweep writes the caretaker notes after the index step embedded the vault
     let stale = || Ok(json!(crate::search::stale_notes(v, st)?.iter().filter(|p| !indexer::CARETAKER_NOTES.contains(&p.as_str())).count()));
     h.insert("stale_embeddings".into(), check(stale));
     h.insert(

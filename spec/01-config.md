@@ -108,9 +108,9 @@ fail before doing anything (no lock taken, nothing read or written):
 
 | Call | {what} | {cli} |
 |---|---|---|
-| `organize_vault` with `apply=true` | `organize_vault(apply=True)` | `enigma-mcp organize <vault>` |
-| `index_brain` with `force=true` | `index_brain(force=True)` | `enigma-mcp index <vault> --force` |
-| `consolidate_graph` with `apply=true` | `consolidate_graph(apply=True)` | `enigma-mcp consolidate <vault> --apply` |
+| `organize_vault` with `apply=true` | `organize_vault(apply=true)` | `enigma-mcp organize <vault>` |
+| `index_brain` with `force=true` | `index_brain(force=true)` | `enigma-mcp index <vault> --force` |
+| `consolidate_graph` with `apply=true` | `consolidate_graph(apply=true)` | `enigma-mcp consolidate <vault> --apply` |
 
 The error is VaultError with this message template (one line; the two
 backticks around {cli} are literal characters of the message):
@@ -122,7 +122,7 @@ backticks around {cli} are literal characters of the message):
 For example, for organize:
 
 ```text
-organize_vault(apply=True) is disabled for MCP calls on this server (ENIGMA_NO_TOOL_APPLY). Ask the human to run `enigma-mcp organize <vault>` after reviewing the dry-run.
+organize_vault(apply=true) is disabled for MCP calls on this server (ENIGMA_NO_TOOL_APPLY). Ask the human to run `enigma-mcp organize <vault>` after reviewing the dry-run.
 ```
 
 (The `<vault>` text is literal; it is not replaced by the vault path.) Dry

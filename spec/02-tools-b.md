@@ -31,11 +31,11 @@ Description: `Write a note at any path. Paths outside Claude/ are rejected unles
 Behaviour: the vault write of 03 §5.2. Returns `path` exactly as the caller
 passed it (not normalised). Errors, in check order: escape; outside Claude/
 (message in 03 §3); directory; NoteExists
-`'{path}' already exists. Pass overwrite=True to replace it.`; IoError after
+`'{path}' already exists. Pass overwrite=true to replace it.`; IoError after
 the retry budget.
 
 Example: `write_note(path="Projects/Injected.md", content="x")` → error text
-`Error executing tool write_note: 'Projects/Injected.md' is outside Claude/. Pass confirm_outside_claude=True only when the user explicitly asked for this write.`;
+`Error executing tool write_note: 'Projects/Injected.md' is outside Claude/. Pass confirm_outside_claude=true only when the user explicitly asked for this write.`;
 with `confirm_outside_claude=true` it returns `Projects/Injected.md`.
 
 ### 5.15 add_task
@@ -48,7 +48,7 @@ Description: `Append an open checkbox task to Claude/Tasks.md, in the format the
 | due | string? | null |
 
 Behaviour: 03 §8. Returns `Claude/Tasks.md`. Errors: InvalidArgument for a bad
-due, e.g. `Error executing tool add_task: time data 'tomorrow' does not match format '%Y-%m-%d'`.
+due, e.g. `Error executing tool add_task: 'tomorrow' is not a date in the form YYYY-MM-DD`.
 
 ### 5.16 list_tasks
 
@@ -87,7 +87,7 @@ meta = parse(text) (03 §6):
 1. If project is not null (an empty string is a real filter): skip the note
    unless casefold(display(meta["project"])) equals casefold(project), where
    a missing `project` key counts as the empty string and a null value as
-   `None` (quirk Q6).
+   `None` (edge case Q6).
 2. If tags is a non-empty list: skip the note unless the casefolded tags are
    a subset of the casefolded str_list(meta["tags"]).
 3. If project is null, tags is null or empty, and meta is empty: skip (a
@@ -95,7 +95,7 @@ meta = parse(text) (03 §6):
 4. Append `{"path": rel, "frontmatter": {key: json_safe(value)…}}` (03 §6),
    keys in frontmatter order.
 5. After appending, stop if the number of results is ≥ limit (so limit ≤ 0
-   still returns one row, quirk Q7).
+   still returns one row, edge case Q7).
 
 Example (GQ-06): frontmatter `created: 2026-07-05`, `tags: [a, b]`,
 `count: 3`, `done: true` gives
@@ -141,7 +141,7 @@ Behaviour:
 Returns a list of rel strings, one content block each. Examples (GQ-04/05):
 backlinks of `Claude/Concepts/Postgres.md` include notes containing
 `[[postgres]]` and `[[Claude/Concepts/Postgres|the db]]`; a note never lists
-itself; `[[Postgres.md]]` does not count (quirk Q9).
+itself; `[[Postgres.md]]` does not count (edge case Q9).
 
 ### 5.19 list_recent
 
@@ -154,7 +154,7 @@ Description: `The n notes changed most recently, latest first. A quick way to se
 Behaviour: for every note of walk(null) take its modification time (seconds,
 64-bit float, following symlinks); sort by (mtime, rel) descending, i.e.
 newest first and, for equal times, rel in reverse code-point order; take
-`[:n]` with slice semantics (quirk Q7). Returns a list of
+`[:n]` with slice semantics (edge case Q7). Returns a list of
 `{"path": rel, "modified": minute stamp of the mtime in local time}`, e.g.
 `{"path": "Daily.md", "modified": "2026-07-05 14:30"}`.
 

@@ -6,14 +6,14 @@ persistent memory for a human and their AI agents. It is a single Rust binary
 named `enigma-mcp`. Author: Harvey Rayhanson (Rayhanson-Git). Licence: MIT.
 
 This file defines the vocabulary, the text and data conventions every other
-spec file relies on, the error model, and the quirks Enigma keeps on
+spec file relies on, the error model, and the edge cases Enigma handles on
 purpose. "See 00 §X" in another file means a section of this file.
 
 ## 1. Spec map
 
 | File | Content |
 |---|---|
-| 00-overview.md | This file: glossary, conventions, error kinds, known quirks |
+| 00-overview.md | This file: glossary, conventions, error kinds, intended edge cases |
 | 01-config.md | Environment variables, tool profiles, state directory, embedding model |
 | 02-tools.md | The 25 MCP tools: parameters, return shapes, errors, profile membership |
 | 03-vault-rules.md | Vault access rules, frontmatter, agent notes, tasks, locking |
@@ -234,22 +234,22 @@ Message rules:
   writes out are implementation-defined, MUST be one line, and SHOULD name the
   path involved.
 - DecodeError messages SHOULD read
-  `'utf-8' codec can't decode byte 0x{hh} in position {offset}: {reason}`,
-  reason being `invalid start byte`, `invalid continuation byte` or
-  `unexpected end of data`.
+  `invalid UTF-8: byte 0x{hh} at offset {offset}: {reason}`,
+  reason being `not a valid first byte`, `not a valid continuation byte` or
+  `the text ends mid-character`.
 
-## 6. Known quirks (kept on purpose)
+## 6. Edge cases (intended)
 
 Enigma keeps these behaviours on purpose. They are part of the
 contract and tests may pin them. The file named specifies each in detail.
 
-| # | Quirk | Where |
+| # | Edge case | Where |
 |---|---|---|
 | Q1 | **Substring section-header match.** Locating the `## Mentions` or `## Relations` section searches for the header as a plain substring, so it also matches inside `### Mentions` or `## Mentions of x`; the section runs to the next `\n## ` after it. | 05 |
 | Q2 | **Uncalendared sheet dates.** A sheet `date` column accepts any `NNNN-NN-NN` digit string, including impossible dates such as `2026-02-31`. | 10 |
 | Q3 | **Consolidation-hash pruning no-op.** When the Librarian state has no `consolidation` block yet, cleanup prunes checked hashes inside a temporary empty map that is then discarded; the checked-hash part of the prune count is 0 and nothing is saved for it. | 12, 08 |
 | Q4 | **Loose frontmatter fences.** The closing fence is the first `\n---` after the opening `---`, so `\n----` or `\n---x` also closes it, and a first line such as `---x` also opens it. | 03 §6 |
-| Q5 | **Impossible YAML timestamps fail the operation.** A frontmatter scalar that matches the YAML timestamp pattern but is not a real calendar value (e.g. `2026-02-30`) makes the whole operation parsing it fail with InvalidArgument (`day is out of range for month`) instead of yielding `{}`. | 03 §6 |
+| Q5 | **Impossible YAML timestamps fail the operation.** A frontmatter scalar that matches the YAML timestamp pattern but is not a real calendar value (e.g. `2026-02-30`) makes the whole operation parsing it fail with InvalidArgument (`that day does not exist in that month`) instead of yielding `{}`. | 03 §6 |
 | Q6 | **Null displays as None.** Comparisons through display() treat a null `project` as the string `None`, so `query_notes(project="None")` matches notes with an empty `project:`. | 03 §6, 02 |
 | Q7 | **Limit edge cases.** Early-exit loops (`query_notes`) return one row for `limit` ≤ 0; slice-style limits (`search_brain`, `context_bundle`, `list_recent`, `sheet_query`) treat a negative limit as "drop that many from the end". Each tool in 02 says which applies. | 02 §5 |
 | Q8 | **Whole-vault vector refresh on filtered search.** A search filtered by tags or folder still reads every vault note, embeds any stale one, and persists the fallback cache. | 04 §7 |
@@ -305,23 +305,23 @@ Each of these is intended behaviour, not an accident:
   Symlinks that resolve inside the vault are still walked. This matches the
   read/write path rule in 03 §1.
 
-Further choices, with their identifiers:
+Further choices:
 
-- **D11, uncaught errors.** An error that reaches the top of a command
+- **Uncaught errors.** An error that reaches the top of a command
   prints one line `error: {Kind}: {message}` (14 §1), never a stack trace.
-- **D12, usage-error text.** Usage errors use clap's usage block and
+- **Usage-error text.** Usage errors use clap's usage block and
   wording. Exit codes and every message written out in 14 are normative.
-- **D13, invalid MCP arguments.** The validation text is that of 02 §3.
-- **D14, transport and parser detail.** The text after
+- **Invalid MCP arguments.** The validation text is that of 02 §3.
+- **Transport and parser detail.** The text after
   `download failed {url}: ` (15 §7.2), after `cannot parse {path}: `
   (15 §6.2) and in the settings.json SyncError (15 §5) is
   implementation-defined (one line).
-- **D15, `evals --init-live` path.** `created: {path}` /
+- **`evals --init-live` path.** `created: {path}` /
   `already exists: {path}` print the vault path as given, not with symbolic
   links resolved (13, 14 §2).
-- **D16, nightly lock path text.** The lock is `enigma-index.lock`, joined to
+- **Nightly lock path text.** The lock is `enigma-index.lock`, joined to
   TMPDIR as a path, so a trailing slash in TMPDIR never doubles (15 §9).
-- **D18, bundled and rendered texts.** Server instructions, onboard
+- **Bundled and rendered texts.** Server instructions, onboard
   placeholders (`… run enigma-mcp install-conventions VAULT`), the
   constitution, `CLAUDE.md` and `AGENTS.md` guides, the nine skills, the
   `Claude/Evals.md` seed, the mcp-servers `why` texts, provision's last step

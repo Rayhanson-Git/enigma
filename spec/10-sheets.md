@@ -249,7 +249,7 @@ printed as indented File JSON with non-ASCII written literally (16 §3.5); `clea
 invalid rows or duplicates. The Librarian's `invalid_sheet_rows` is the total
 number of invalid rows found the same way. CLI: 14 §2 (sheets).
 
-## 10. Known quirks (kept on purpose)
+## 10. Edge cases (intended)
 
 1. **Uncalendared dates.** `2026-02-30` passes date validation; only the shape is
    checked.

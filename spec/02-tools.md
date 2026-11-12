@@ -107,7 +107,7 @@ When a tool fails with any error kind (00 §5), the `tools/call` result is
 Error executing tool {tool}: {message}
 ```
 
-Example: `Error executing tool write_note: 'Projects/Injected.md' is outside Claude/. Pass confirm_outside_claude=True only when the user explicitly asked for this write.`
+Example: `Error executing tool write_note: 'Projects/Injected.md' is outside Claude/. Pass confirm_outside_claude=true only when the user explicitly asked for this write.`
 
 Other failures:
 
@@ -169,7 +169,7 @@ Shared errors: every tool needs the vault, so every tool can fail with the
 vault configuration errors of 01 §3 (`ENIGMA_VAULT_PATH is not set;
 point it at the vault folder.`, `Vault root does not exist: {root}`). Tools
 that compute the state dir can fail with IoError if it cannot be created.
-Tools that parse frontmatter can fail with quirk Q5. These are not repeated
+Tools that parse frontmatter can fail with edge case Q5. These are not repeated
 below. "Graph tools" (find_entity, related_notes, graph_stats) need
 `<state dir>/graph.db` and otherwise fail with VaultError
 `Graph cache not built yet — run index_brain first.`

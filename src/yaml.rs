@@ -78,7 +78,7 @@ pub fn resolve_plain(s: &str) -> Plain {
 }
 
 /// Internal construction failure: a YAML error (frontmatter becomes {}) or a
-/// quirk-Q5 calendar error that fails the whole operation.
+/// edge-case Q5 calendar error that fails the whole operation.
 enum Fail {
     Yaml,
     Calendar(Error),
@@ -141,22 +141,22 @@ fn to_timestamp(s: &str) -> Built {
     let num = |i: usize| c.get(i).map(|m| m.as_str().parse::<u32>().unwrap_or(0));
     let (y, m, d) = (num(1).unwrap_or(0), num(2).unwrap_or(0), num(3).unwrap_or(0));
     if y == 0 {
-        return Err(cal("year 0 is out of range"));
+        return Err(cal("the year must be 1 or later"));
     }
     if !(1..=12).contains(&m) {
-        return Err(cal("month must be in 1..12"));
+        return Err(cal("the month must be between 1 and 12"));
     }
-    let date = NaiveDate::from_ymd_opt(y as i32, m, d).ok_or_else(|| cal("day is out of range for month"))?;
+    let date = NaiveDate::from_ymd_opt(y as i32, m, d).ok_or_else(|| cal("that day does not exist in that month"))?;
     let Some(h) = num(4) else { return Ok(Y::Date(date)) };
     let (mi, se) = (num(5).unwrap_or(0), num(6).unwrap_or(0));
     if h > 23 {
-        return Err(cal("hour must be in 0..23"));
+        return Err(cal("the hour must be between 0 and 23"));
     }
     if mi > 59 {
-        return Err(cal("minute must be in 0..59"));
+        return Err(cal("the minute must be between 0 and 59"));
     }
     if se > 59 {
-        return Err(cal("second must be in 0..59"));
+        return Err(cal("the second must be between 0 and 59"));
     }
     let frac = c.get(7).map(|m| m.as_str()).unwrap_or("");
     let us: u32 = format!("{:0<6}", &frac[..frac.len().min(6)]).parse().unwrap_or(0);
@@ -960,8 +960,8 @@ m: {k: 1}
 
     #[test]
     fn calendar_errors_and_yaml_errors() {
-        assert_eq!(parse_doc("d: 2026-02-30\n").unwrap_err().msg, "day is out of range for month");
-        assert_eq!(parse_doc("d: 2026-13-01\n").unwrap_err().msg, "month must be in 1..12");
+        assert_eq!(parse_doc("d: 2026-02-30\n").unwrap_err().msg, "that day does not exist in that month");
+        assert_eq!(parse_doc("d: 2026-13-01\n").unwrap_err().msg, "the month must be between 1 and 12");
         assert_eq!(parse_doc("a: [unclosed\n").unwrap(), None);
         assert_eq!(parse_doc("a: =\n").unwrap(), None);
         assert_eq!(parse_doc("? [a]\n: b\n").unwrap(), None);

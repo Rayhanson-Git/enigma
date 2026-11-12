@@ -95,17 +95,17 @@ static DUE: LazyLock<Regex> =
 /// Due date validation (03 §8).
 pub fn validate_due(due: &str) -> Result<()> {
     let c = DUE.captures(due).ok_or_else(|| {
-        Error::invalid(format!("time data {} does not match format '%Y-%m-%d'", quote_str(due)))
+        Error::invalid(format!("{} is not a date in the form YYYY-MM-DD", quote_str(due)))
     })?;
     let end = c.get(0).map_or(0, |m| m.end());
     if end != due.len() {
-        return Err(Error::invalid(format!("unconverted data remains: {}", &due[end..])));
+        return Err(Error::invalid(format!("unexpected text after the date: {}", &due[end..])));
     }
     let n = |i: usize| c[i].trim().parse::<u32>().unwrap_or(0);
     if n(1) == 0 {
-        return Err(Error::invalid("year 0 is out of range"));
+        return Err(Error::invalid("the year must be 1 or later"));
     }
-    NaiveDate::from_ymd_opt(n(1) as i32, n(2), n(3)).ok_or_else(|| Error::invalid("day is out of range for month"))?;
+    NaiveDate::from_ymd_opt(n(1) as i32, n(2), n(3)).ok_or_else(|| Error::invalid("that day does not exist in that month"))?;
     Ok(())
 }
 

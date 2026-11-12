@@ -44,6 +44,6 @@ Requires the `enigma` MCP server.
    no lecture.
 
 4. **Save.** `write_note` to `Claude/Digests/YYYY-MM-DD.md` for today, with
-   `overwrite=True`: a later run today supersedes an earlier one.
+   `overwrite=true`: a later run today supersedes an earlier one.
    Frontmatter for the note: `created: YYYY-MM-DD HH:MM`, `agent: claude`, `project: ""`, `tags: [digest]`, `type: digest`.
 5. **Reply.** Post the digest in the chat.

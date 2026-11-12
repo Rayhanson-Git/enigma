@@ -96,7 +96,7 @@ pub fn coerce(reply: &Value) -> Extraction {
             continue;
         }
         let aliases: Vec<String> = match o.get("aliases") {
-            Some(Value::String(s)) => s.chars().map(String::from).collect(), // quirk: a string is iterated per character
+            Some(Value::String(s)) => s.chars().map(String::from).collect(), // edge case: a string is iterated per character
             Some(Value::Array(a)) => a.iter().map(|v| strip(&display(&json_to_y(v))).to_string()).collect(),
             _ => vec![],
         };

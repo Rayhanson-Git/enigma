@@ -138,7 +138,7 @@ retracted_notes, fixed, removed, flattened, retired_stubs is non-zero. Return
 - **prune_checked_hash(block, live)**: take the block's `checked_hash` map (a
   throwaway empty map when absent or empty), delete keys not in `live` in
   place, store it back when anything was deleted, return the count. See 08
-  Known quirks for the absent-block case.
+  Edge cases for the absent-block case.
 
 ## 9. CLI (flags in 14 §2, cleanup)
 
@@ -150,7 +150,7 @@ retracted_notes, fixed, removed, flattened, retired_stubs is non-zero. Return
 
 `--apply-repairs` wins when both apply flags are given.
 
-## 10. Known quirks (kept on purpose)
+## 10. Edge cases (intended)
 
 1. Relation lines in stubs and tombstones still count as inbound support in
    find_orphans.

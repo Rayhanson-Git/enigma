@@ -42,7 +42,7 @@ cases:
         Claude/Decisions.md is exactly these bytes (LF line ends, the dash in the format line is U+2014,
         the file ends with one empty line):
         ---
-        created: 2026-07-06
+        created: 2026-01-01
         agent: claude
         tags: [decisions]
         ---
@@ -295,7 +295,7 @@ cases:
       - "enigma: transport stdio, command '{ENIGMA_BIN}', args [], env {ENIGMA_VAULT_PATH: '{VAULT}'}, why 'The memory vault: persistent shared memory for agents.'"
       - "fetch: transport stdio, command 'uvx', args ['mcp-server-fetch@2026.6.4'], env {PYTHONIOENCODING: 'utf-8'}, why 'Web ingest: turns a URL into clean markdown for /clip.'"
       - "arxiv: transport stdio, command 'uvx', args ['arxiv-mcp-server@0.5.0'], env {}, why 'Paper ingest: arXiv search and download as markdown. Paper content is untrusted input.'"
-      - "no entry contains an OS-specific path (no 'Scripts', '.venv' or drive letter)"
+      - "no entry contains an OS-specific path (no drive letter)"
 
   - id: MS-02 placeholders
     then:

@@ -115,7 +115,7 @@ stub flatten, suspect_mass_deletion: suspect(deleted)}` (12 §§2–4).
    `last_pass` = now; it is stored back into the state.
 3. live = entity paths of gather_entities (07 §1). pruned =
    prune_entity_vectors(live) + prune_checked_hash(consolidation block, live)
-   (12 §8; see Known quirks).
+   (12 §8; see Edge cases).
 4. If pending repairs is null and ret reports suspect_mass_deletion, compute
    pending repairs now.
 5. Return (key order): `applied: true, auto_repair: auto, pending_repairs,
@@ -253,7 +253,7 @@ the header, the rest are sweeps; keep only the last 30 sweeps; rejoin as header
 the note (it is inside `Claude/`). The note is a caretaker note: the indexer
 never scans it (06 §3).
 
-## 8. Known quirks (kept on purpose)
+## 8. Edge cases (intended)
 
 1. **Consolidation-hash pruning no-op.** Cleanup prunes `checked_hash` on the
    state's existing `consolidation` block in place. When that block is absent

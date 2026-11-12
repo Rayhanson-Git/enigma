@@ -26,11 +26,11 @@ fn tasks_tk_03() {
     let d = mini_vault();
     let e = add_task(&open(&d), "x", Some("tomorrow")).unwrap_err();
     assert_eq!(e.kind, Kind::InvalidArgument);
-    assert_eq!(e.msg, "time data 'tomorrow' does not match format '%Y-%m-%d'");
+    assert_eq!(e.msg, "'tomorrow' is not a date in the form YYYY-MM-DD");
     for (due, msg) in [
-        ("2026-07-100", "unconverted data remains: 0"),
-        ("2026-02-30", "day is out of range for month"),
-        ("2026-7-5x", "unconverted data remains: x"),
+        ("2026-07-100", "unexpected text after the date: 0"),
+        ("2026-02-30", "that day does not exist in that month"),
+        ("2026-7-5x", "unexpected text after the date: x"),
     ] {
         assert_eq!(add_task(&open(&d), "x", Some(due)).unwrap_err().msg, msg);
     }
