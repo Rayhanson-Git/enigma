@@ -119,9 +119,9 @@ fn vault_va_13() {
     assert!(!inside("Daily.md"));
     assert!(!inside("ClaudeFake/x.md"));
     assert!(!inside("Claude/../Daily.md"));
-    // POSIX compares exactly, so other spellings are outside Claude/
-    assert!(!inside("claude/Sessions/x.md"));
-    assert!(!inside("CLAUDE/Index.md"));
+    // POSIX compares exactly, so other spellings are outside Claude/; Windows ignores case (03 §3)
+    assert_eq!(inside("claude/Sessions/x.md"), cfg!(windows));
+    assert_eq!(inside("CLAUDE/Index.md"), cfg!(windows));
 }
 
 #[test]

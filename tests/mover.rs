@@ -34,6 +34,9 @@ fn mv(d: &tempfile::TempDir, st: &Path) -> serde_json::Value {
     move_note(&open(d), st, "Signal.md", "02 - Orbit/Signal.md", None).unwrap()
 }
 
+/// A plain I/O error: EIO on POSIX, ERROR_IO_DEVICE on Windows (where 5 would be a lock error).
+const EIO: i32 = if cfg!(windows) { 1117 } else { 5 };
+
 #[test]
 fn mover_mv_01() {
     let d = fixture();
@@ -92,7 +95,7 @@ fn mover_mv_06() {
     faults::reset();
     let d = fixture();
     let before = snapshot(d.path());
-    faults::arm("move_rename", Fault::Os(5), 1);
+    faults::arm("move_rename", Fault::Os(EIO), 1);
     assert!(move_note(&open(&d), tempfile::tempdir().unwrap().path(), "Signal.md", "02 - Orbit/Signal.md", None).is_err());
     assert_eq!(snapshot(d.path()), before);
 }
@@ -103,7 +106,7 @@ fn mover_mv_07() {
     let d = fixture();
     let before = snapshot(d.path());
     faults::arm("move_write", Fault::Short(0), 1); // first rewrite goes through
-    faults::arm("move_write", Fault::Os(5), 1); // the second one fails
+    faults::arm("move_write", Fault::Os(EIO), 1); // the second one fails
     assert!(move_note(&open(&d), tempfile::tempdir().unwrap().path(), "Signal.md", "02 - Orbit/Signal.md", None).is_err());
     assert_eq!(snapshot(d.path()), before);
 }

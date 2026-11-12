@@ -182,9 +182,11 @@ pub fn quote_word_windows(w: &str) -> String {
 }
 
 pub fn quote_word(w: &str) -> String {
-    if cfg!(windows) {
-        return quote_word_windows(w);
-    }
+    if cfg!(windows) { quote_word_windows(w) } else { quote_word_posix(w) }
+}
+
+/// One word under the POSIX shell rules (15 §6.3).
+pub fn quote_word_posix(w: &str) -> String {
     if w.is_empty() {
         return "''".into();
     }

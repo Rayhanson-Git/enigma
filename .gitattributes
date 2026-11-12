@@ -1,0 +1,4 @@
+# Text is checked out with LF everywhere: the binary embeds prompts, skills and guides byte for byte.
+* text=auto eol=lf
+*.gif binary
+*.png binary

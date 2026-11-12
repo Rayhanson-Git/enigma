@@ -360,7 +360,7 @@ fn indexer_ix_21() {
     let first = Manifest::load(st.path()).unwrap();
     assert!(!first.failures.is_empty() && first.failures.values().all(|f| f.attempts == 1));
     let fake = fake_codex_dir();
-    let path = format!("{}:/usr/bin:/bin", fake.path().display());
+    let path = sandbox_path(fake.path());
     let o = cli_without_extractors(&["index", v], &[state, ("PATH", &path)]);
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
     let counts: serde_json::Value = serde_json::from_slice(&o.stdout).unwrap();
@@ -411,7 +411,7 @@ fn indexer_ix_22_cli() {
     let st = tempfile::tempdir().unwrap();
     std::fs::write(d.path().join("Bad.md"), b"\xff\xfe broken").unwrap();
     let fake = fake_codex_dir();
-    let path = format!("{}:/usr/bin:/bin", fake.path().display());
+    let path = sandbox_path(fake.path());
     let o = cli_without_extractors(&["index", d.path().to_str().unwrap()], &[("ENIGMA_STATE_DIR", st.path().to_str().unwrap()), ("PATH", &path)]);
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
     let counts: serde_json::Value = serde_json::from_slice(&o.stdout).unwrap();

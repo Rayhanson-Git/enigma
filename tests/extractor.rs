@@ -346,7 +346,8 @@ fn ex_20_empty() {
     let e = Cli::extraction(None).err().unwrap();
     assert_eq!((e.kind, e.msg.as_str()), (Kind::ExtractorError, "Unknown backend: "));
     for c in [Cli::extraction(Some("claude")).unwrap(), Cli::consolidation(Some("claude")).unwrap()] {
-        assert_eq!(c.argv().unwrap()[1..], ["-p", "--tools", "", "--strict-mcp-config"]);
+        // on Windows the stand-in is a .cmd, so the command starts with cmd /c <path>
+        assert_eq!(c.argv().unwrap()[if cfg!(windows) { 3 } else { 1 }..], ["-p", "--tools", "", "--strict-mcp-config"]);
     }
 }
 

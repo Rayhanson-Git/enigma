@@ -224,7 +224,7 @@ fn evals_ev_14() {
     let line: Value = serde_json::from_str(raw.trim_end()).unwrap();
     assert_eq!(line["ts"], "2026-07-09T12:00:00");
     assert_eq!(line["mrr"], 1.0);
-    assert_eq!(line["vault"], json!(format!("{}/Notes/..", d.path().display())));
+    assert_eq!(line["vault"], json!(d.path().join("Notes").join("..").display().to_string()));
     assert_eq!(line["golden"], "g/golden.yaml");
     assert!(line["git"].is_string() || line["git"].is_null());
 }

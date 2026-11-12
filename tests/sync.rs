@@ -76,7 +76,7 @@ fn code(o: &Output) -> i32 {
     o.status.code().unwrap()
 }
 fn exe() -> PathBuf {
-    Path::new(bin()).canonicalize().unwrap()
+    enigma_mcp::config::plain(Path::new(bin()).canonicalize().unwrap())
 }
 fn spec(rel: &str) -> Vec<u8> {
     fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("spec").join(rel)).unwrap()
@@ -667,7 +667,7 @@ fn recorder(s: &Sandbox, fail_on: Option<(&str, i32)>) -> PathBuf {
     let log = s.p("claude.log");
     let rule = fail_on.map_or(String::new(), |(w, c)| format!("case \"$*\" in *{w}*) exit {c};; esac\n"));
     let ps_rule = fail_on.map_or(String::new(), |(w, c)| format!("if (($args -join ' ') -like '*{w}*') {{ exit {c} }}\n"));
-    let ps = format!("$line = \"$PSScriptRoot\\claude\"\nforeach ($a in $args) {{ $line += \"|$a\" }}\n[IO.File]::AppendAllText('{}', $line + \"`n\")\n{ps_rule}exit 0\n", log.display());
+    let ps = format!("$line = '{0}'\nforeach ($a in $args) {{ $line += \"|$a\" }}\n[IO.File]::AppendAllText('{1}', $line + \"`n\")\n{ps_rule}exit 0\n", s.p("bin/claude").display(), log.display());
     s.stub("claude", &format!("#!/bin/sh\n(printf '%s' \"$0\"; for a in \"$@\"; do printf '|%s' \"$a\"; done; echo) >> '{}'\n{rule}exit 0\n", log.display()), &ps);
     log
 }
@@ -853,13 +853,13 @@ fn sync_ms_08() {
 
 #[test]
 fn sync_ms_09() {
-    assert_eq!(mcp_sync::quote_word("Az09@%+=:,./_-"), "Az09@%+=:,./_-");
-    assert_eq!(mcp_sync::quote_word(""), "''");
-    assert_eq!(mcp_sync::quote_word("a b"), "'a b'");
-    assert_eq!(mcp_sync::quote_word("it's"), "'it'\"'\"'s'");
-    assert_eq!(mcp_sync::quote_word("$HOME"), "'$HOME'");
+    assert_eq!(mcp_sync::quote_word_posix("Az09@%+=:,./_-"), "Az09@%+=:,./_-");
+    assert_eq!(mcp_sync::quote_word_posix(""), "''");
+    assert_eq!(mcp_sync::quote_word_posix("a b"), "'a b'");
+    assert_eq!(mcp_sync::quote_word_posix("it's"), "'it'\"'\"'s'");
+    assert_eq!(mcp_sync::quote_word_posix("$HOME"), "'$HOME'");
     let printed = mcp_sync::printed(&["mcp".into(), "--env".into(), "K=a b".into(), String::new()]);
-    assert_eq!(printed, "claude mcp --env 'K=a b' ''");
+    assert_eq!(printed, if cfg!(windows) { "claude mcp --env \"K=a b\" \"\"" } else { "claude mcp --env 'K=a b' ''" });
 }
 
 #[test]

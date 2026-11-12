@@ -54,7 +54,8 @@ Append-only log. One line per decision:
 
 5. owner name = `owner` when given (even empty), else `ENIGMA_OWNER`, else the
    full name of the system account running the command (the first field of
-   its passwd entry). Each candidate is stripped and has every CR and LF
+   its passwd entry; on Windows the account's display name, when it has
+   one). Each candidate is stripped and has every CR and LF
    replaced with one space; a candidate that is then empty is skipped (an
    explicit empty `owner` skips straight to the fallback). Fallback:
    `the vault owner`. Guide text = GUIDE, and constitution text =
@@ -427,7 +428,8 @@ non-empty. Other runs exit 0, even with drift.
 `enigma-mcp index-nightly VAULT [STATE_DIR]`. No VAULT → stderr
 `usage: enigma-mcp index-nightly <vault> [state-dir]` + LF, exit 1, before
 anything else (no start line, no lock). LOCK = `$TMPDIR/enigma-index.lock`
-(`/tmp/enigma-index.lock` when `TMPDIR` is unset or empty), a directory holding a
+(`/tmp/enigma-index.lock` when `TMPDIR` is unset or empty; on Windows the
+system temp folder in that case), a directory holding a
 file `pid` with the runner's pid and LF. STAMP = second stamp.
 
 1. Environment for the rounds: `ENIGMA_VAULT_PATH` = VAULT; `ENIGMA_STATE_DIR` =
@@ -448,6 +450,9 @@ file `pid` with the runner's pid and LF. STAMP = second stamp.
    LOCK is removed on every exit (success, failed round, interrupt).
 5. Another process whose command line contains `enigma-mcp index ` (trailing
    space) is running → print `indexer already running; skipping`, exit 0.
+   The process list is `ps -Ao pid=,command=` on POSIX and the `Win32_Process`
+   class, read through PowerShell, on Windows; a list that cannot be read
+   counts as empty.
 6. Up to 20 rounds: run `EXE index VAULT` (default batch, no flags) capturing
    stdout and stderr together. Non-zero exit (e.g. LockBusy while a Librarian
    sweep holds the caretaker lock) → print the last 5 lines of its output,
@@ -465,6 +470,7 @@ file `pid` with the runner's pid and LF. STAMP = second stamp.
    line), runs no further round, and terminates by that same signal with its
    default action. Its parent therefore sees death by the signal, not an
    exit code; a shell reports 128 + the signal number (130, 143, 129).
+   Windows has no SIGHUP: only SIGINT and SIGTERM are handled there.
 
 ### 9.1 launchd templates
 
@@ -605,9 +611,12 @@ place, and never runs `launchctl` except as above. Tests and smoke runs set
 HOME to a temp folder and `ENIGMA_LAUNCHCTL` to a stub that only logs its
 arguments.
 
-Enigma ships no Windows scheduled-task file (00 §7). A Windows user who wants
-nightly sweeps can schedule `EXE librarian VAULT` with Task Scheduler and the
-same two environment variables (informative).
+Enigma ships no Windows scheduled-task file (00 §7). On Windows every ACTION
+fails at once, before anything is read, written or run: stderr
+`error: schedule manages macOS launchd jobs only; on Windows, schedule "enigma-mcp librarian <vault>" with Task Scheduler`
++ LF, exit 2. A Windows user who wants nightly sweeps can schedule
+`EXE librarian VAULT` with Task Scheduler and the same two environment
+variables (informative).
 
 ## 10. Acceptance map
 
