@@ -4,7 +4,7 @@ This page explains how Enigma MCP is put together. The exact behaviour of every 
 this is the overview.
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#E6ECFF", "primaryBorderColor": "#6FA0FF", "lineColor": "#8FA3D6", "clusterBkg": "#090D28", "clusterBorder": "#25315F", "titleColor": "#E6ECFF", "edgeLabelBackground": "#090D28", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart TB
   subgraph callers["Who calls it"]
     agents["Agents<br/>Claude Code, Codex, OpenClaw, Hermes"]
@@ -91,13 +91,31 @@ flowchart TB
   clean --> extract
 
 
-  class agents,you,cron,web outside
+  class agents,you,cron outside
+  class web warn
   class server,cli,lib entry
-  class md,gnotes,sc,vec,db,man,jr,ls store
-  classDef outside fill:#0B1130,stroke:#8FA3D6,color:#E6ECFF
-  classDef entry fill:#16245C,stroke:#6FA0FF,color:#E6ECFF
-  classDef store fill:#0B1130,stroke:#5ED0E6,color:#E6ECFF
-  classDef stop fill:#0B1130,stroke:#9DBBFF,color:#E6ECFF
+  class notes,sheets,vault,search,gr,indexer,extract,org,clean part
+  class md,gnotes,sc source
+  class vec,db,man,jr,ls store
+  class emb,llm model
+  style callers fill:#0E1018,stroke:#8A8780,stroke-width:1px
+  style bin fill:#070B22,stroke:#3D6BE0,stroke-width:2px
+  style core fill:#0B1233,stroke:#25315F,stroke-dasharray:4 4
+  style truth fill:#07201A,stroke:#3E8F6A,stroke-width:1.5px
+  style state fill:#06202A,stroke:#2E93A8,stroke-dasharray:4 4
+  style models fill:#140F33,stroke:#6D58C9
+  classDef outside fill:#1B1D26,stroke:#C9C4B9,stroke-width:1.5px,color:#F4F2EC
+  classDef warn fill:#2A1014,stroke:#F0635B,stroke-width:1.5px,stroke-dasharray:5 3,color:#FFE3E0
+  classDef entry fill:#2447C4,stroke:#A9C4FF,stroke-width:2px,color:#FFFFFF
+  classDef part fill:#101A3E,stroke:#6FA0FF,stroke-width:1.5px,color:#E6ECFF
+  classDef lane fill:#1A2F7A,stroke:#8FB4FF,stroke-width:2px,color:#F2F5FF
+  classDef ask fill:#0B1130,stroke:#8FA3D6,stroke-width:1.5px,stroke-dasharray:5 3,color:#E6ECFF
+  classDef source fill:#12402C,stroke:#5EC28F,stroke-width:1.5px,color:#E6FFF2
+  classDef store fill:#0A3440,stroke:#5ED0E6,stroke-width:1.5px,color:#E3FBFF
+  classDef model fill:#241A52,stroke:#A78BFA,stroke-width:1.5px,color:#EFE9FF
+  classDef good fill:#12402C,stroke:#5EC28F,stroke-width:2px,color:#E6FFF2
+  classDef stop fill:#4A1014,stroke:#F0635B,stroke-width:2px,color:#FFE3E0
+  linkStyle default stroke:#7C9BEA,stroke-width:1.5px
 ```
 
 ## One rule: the notes are the truth
@@ -121,7 +139,7 @@ needs to be synced or backed up.
 ## Search
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#E6ECFF", "primaryBorderColor": "#6FA0FF", "lineColor": "#8FA3D6", "clusterBkg": "#090D28", "clusterBorder": "#25315F", "titleColor": "#E6ECFF", "edgeLabelBackground": "#090D28", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   q(["search_brain<br/>query, tags, folder, limit"]) --> walk["Walk the vault<br/>skip .obsidian, .trash, .git"]
   walk --> filt{"Tags or folder given?"}
@@ -148,12 +166,25 @@ flowchart LR
   cut --> ex["Add an excerpt<br/>title match, matching line,<br/>or first line"]
   ex --> out(["path + excerpt"])
 
-  class q,out entry
-  class rrf entry
-  classDef outside fill:#0B1130,stroke:#8FA3D6,color:#E6ECFF
-  classDef entry fill:#16245C,stroke:#6FA0FF,color:#E6ECFF
-  classDef store fill:#0B1130,stroke:#5ED0E6,color:#E6ECFF
-  classDef stop fill:#0B1130,stroke:#9DBBFF,color:#E6ECFF
+  class q,rrf entry
+  class out good
+  class filt,have,any ask
+  class walk,some,every,cand,cut,ex part
+  class bm,cos,substr lane
+  class reuse1,reuse2 store
+  class embed model
+  classDef outside fill:#1B1D26,stroke:#C9C4B9,stroke-width:1.5px,color:#F4F2EC
+  classDef warn fill:#2A1014,stroke:#F0635B,stroke-width:1.5px,stroke-dasharray:5 3,color:#FFE3E0
+  classDef entry fill:#2447C4,stroke:#A9C4FF,stroke-width:2px,color:#FFFFFF
+  classDef part fill:#101A3E,stroke:#6FA0FF,stroke-width:1.5px,color:#E6ECFF
+  classDef lane fill:#1A2F7A,stroke:#8FB4FF,stroke-width:2px,color:#F2F5FF
+  classDef ask fill:#0B1130,stroke:#8FA3D6,stroke-width:1.5px,stroke-dasharray:5 3,color:#E6ECFF
+  classDef source fill:#12402C,stroke:#5EC28F,stroke-width:1.5px,color:#E6FFF2
+  classDef store fill:#0A3440,stroke:#5ED0E6,stroke-width:1.5px,color:#E3FBFF
+  classDef model fill:#241A52,stroke:#A78BFA,stroke-width:1.5px,color:#EFE9FF
+  classDef good fill:#12402C,stroke:#5EC28F,stroke-width:2px,color:#E6FFF2
+  classDef stop fill:#4A1014,stroke:#F0635B,stroke-width:2px,color:#FFE3E0
+  linkStyle default stroke:#7C9BEA,stroke-width:1.5px
 ```
 
 1. **Candidates.** Every note in the vault, or the subset matching the tag and folder filters.
@@ -204,7 +235,7 @@ If any step fails, the files already changed are restored. Notes under `Claude/`
 ## The Librarian
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#E6ECFF", "primaryBorderColor": "#6FA0FF", "lineColor": "#8FA3D6", "clusterBkg": "#090D28", "clusterBorder": "#25315F", "titleColor": "#E6ECFF", "edgeLabelBackground": "#090D28", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   start(["enigma-mcp librarian"]) --> first{"Has this vault<br/>ever had a run?"}
   first -->|"no, and no<br/>--confirm-first-run"| refuse["Stop: do a --dry-run first"]
@@ -225,12 +256,24 @@ flowchart LR
   done -->|no| ok(["exit 0"])
   done -->|yes| bad(["exit 1, so the<br/>scheduler can alert"])
 
-  class start,ok entry
+  class start entry
+  class ok good
+  class first,lk,done ask
+  class s1,s2,s3,s4,s5,s6,s7 lane
   class refuse,busy,bad stop
-  classDef outside fill:#0B1130,stroke:#8FA3D6,color:#E6ECFF
-  classDef entry fill:#16245C,stroke:#6FA0FF,color:#E6ECFF
-  classDef store fill:#0B1130,stroke:#5ED0E6,color:#E6ECFF
-  classDef stop fill:#0B1130,stroke:#9DBBFF,color:#E6ECFF
+  style steps fill:#070B22,stroke:#3D6BE0,stroke-dasharray:4 4
+  classDef outside fill:#1B1D26,stroke:#C9C4B9,stroke-width:1.5px,color:#F4F2EC
+  classDef warn fill:#2A1014,stroke:#F0635B,stroke-width:1.5px,stroke-dasharray:5 3,color:#FFE3E0
+  classDef entry fill:#2447C4,stroke:#A9C4FF,stroke-width:2px,color:#FFFFFF
+  classDef part fill:#101A3E,stroke:#6FA0FF,stroke-width:1.5px,color:#E6ECFF
+  classDef lane fill:#1A2F7A,stroke:#8FB4FF,stroke-width:2px,color:#F2F5FF
+  classDef ask fill:#0B1130,stroke:#8FA3D6,stroke-width:1.5px,stroke-dasharray:5 3,color:#E6ECFF
+  classDef source fill:#12402C,stroke:#5EC28F,stroke-width:1.5px,color:#E6FFF2
+  classDef store fill:#0A3440,stroke:#5ED0E6,stroke-width:1.5px,color:#E3FBFF
+  classDef model fill:#241A52,stroke:#A78BFA,stroke-width:1.5px,color:#EFE9FF
+  classDef good fill:#12402C,stroke:#5EC28F,stroke-width:2px,color:#E6FFF2
+  classDef stop fill:#4A1014,stroke:#F0635B,stroke-width:2px,color:#FFE3E0
+  linkStyle default stroke:#7C9BEA,stroke-width:1.5px
 ```
 
 | Step | What it does |
