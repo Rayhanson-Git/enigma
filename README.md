@@ -51,6 +51,13 @@ What you get that a vector database behind an MCP wrapper does not give you:
 - **A vault that looks after itself.** One nightly run indexes new notes, suggests filing, checks health and reports.
 - **Nothing you cannot rebuild.** Every cache lives outside the vault and can be deleted and rebuilt from the notes.
 
+<p align="center">
+  <img src="assets/graph-timelapse.gif" alt="Time-lapse of a real vault's graph forming: 1,623 notes and 5,441 links appearing in the order they were written" width="100%">
+</p>
+
+<p align="center"><sub>A real vault growing over two years: 1,623 notes and 5,441 links, in the order they were written. Each dot is a note.
+Ivory and coral are notes people and agents wrote; red, green and sand are the people, organizations, projects and topics Enigma found in them.</sub></p>
+
 ### Who it is for
 
 - You use more than one AI agent and want them to share what they learn.

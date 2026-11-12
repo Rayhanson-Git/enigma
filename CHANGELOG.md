@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- README: a time-lapse of a real vault's graph forming, and a brushed-metal emblem in the banner.
+
 ## 1.2.0
 
 - The extractor's model now runs with its tools switched off unless `ENIGMA_EXTRACTOR_NO_TOOLS` is explicitly off.
