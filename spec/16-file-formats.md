@@ -333,7 +333,8 @@ Readers check that `graph.db` exists before opening it and never create it.
 
 ## 5. Vector caches
 
-Both caches are one compact File JSON object:
+Both caches are one compact File JSON object. On POSIX systems each is saved
+readable and writable by its owner only (mode 0600):
 
 ```json
 {"Daily.md": {"hash": "<64 lowercase hex>", "vec": [0.0123, -0.5, 1.0]}}

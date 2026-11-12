@@ -85,8 +85,9 @@ a sheet folder.
    binary value); `neighbors` is the first 3 neighbours. A note in a nested
    sub-folder moves to the top of the target folder (only its file name is
    kept).
-4. Apply and at least one move → rebuild the graph cache; `cache_rebuilt` = true
-   (else false).
+4. Apply and at least one move → rebuild the graph cache, then refresh the
+   note vectors (04 §5, persisted), so the moved and rewritten notes are not
+   stale; `cache_rebuilt` = true (else false).
 5. Apply → update the suggestions block (§3.1).
 6. Return `{moved, proposals, skipped, cache_rebuilt}`.
 

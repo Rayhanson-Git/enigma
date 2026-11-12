@@ -309,10 +309,10 @@ cd enigma
 cargo build --release
 ```
 
-Fetch the embedding model once (the model file is 33 MB):
+Fetch the embedding model once (three files, 34 MB):
 
 ```bash
-pip install -U huggingface_hub && hf download TaylorAI/bge-micro-v2
+pip install -U huggingface_hub && hf download TaylorAI/bge-micro-v2 config.json tokenizer.json model.safetensors
 ```
 
 Install the vault guides and the `Claude/` folders. Existing files are never overwritten:

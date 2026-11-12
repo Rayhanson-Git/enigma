@@ -12,6 +12,8 @@
 - Error messages for dates, times and invalid UTF-8 say what is wrong in plain words.
 - Empty values and booleans print as `null`, `true` and `false`.
 - CI runs on macOS and Ubuntu.
+- After the organizer moves a note, its vector is refreshed in the same run.
+- Vector cache files and a newly created state folder are readable by their owner only.
 - `AGENTS.md`: setup instructions an AI agent can follow from the repository link.
 - `install-conventions` fills in the owner's name by itself: `ENIGMA_OWNER`, else the system account's full name.
 

@@ -75,6 +75,9 @@ In every case the directory and its missing parents are created before the
 path is returned. Two different vault roots therefore get different state dirs
 under the same parent, and the same root always gets the same dir.
 
+A state dir that Enigma creates is made accessible to its owner only (mode
+0700 on POSIX systems); an existing one keeps its permissions.
+
 ## 5. Agent name
 
 The agent name is computed on each use: take `ENIGMA_AGENT_NAME`, strip it;

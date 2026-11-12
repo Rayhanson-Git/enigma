@@ -393,3 +393,20 @@ fn embedding_order_and_batching_do_not_change_vectors() {
         assert!(close(&single[0], &a[i]), "text {i} differs from its unbatched vector");
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn search_private_state() {
+    // vectors are derived from private notes: the cache file and a new state dir are owner-only
+    use std::os::unix::fs::PermissionsExt;
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("fallback_embeddings.json");
+    enigma_mcp::search::save_cache(&path, &Default::default()).unwrap();
+    assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+    let fresh = d.path().join("state");
+    enigma_mcp::config::owner_only(d.path(), 0o755).unwrap();
+    // state_dir is driven by the environment, so the helper is checked directly here
+    std::fs::create_dir(&fresh).unwrap();
+    enigma_mcp::config::owner_only(&fresh, 0o700).unwrap();
+    assert_eq!(std::fs::metadata(&fresh).unwrap().permissions().mode() & 0o777, 0o700);
+}

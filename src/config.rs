@@ -70,8 +70,26 @@ pub fn state_dir(vault_root: Option<&Path>) -> Result<PathBuf> {
             derived_state_dir(&root)?
         }
     };
+    let fresh = !dir.exists();
     std::fs::create_dir_all(&dir).map_err(|e| Error::io(&e, &dir))?;
+    if fresh {
+        owner_only(&dir, 0o700).map_err(|e| Error::io(&e, &dir))?; // the state holds private note vectors
+    }
     Ok(dir)
+}
+
+/// Limits a file or folder to its owner (no-op where the system has no such modes).
+pub fn owner_only(path: &Path, mode: u32) -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode))
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (path, mode);
+        Ok(())
+    }
 }
 
 /// The agent name (01 §5) for a raw ENIGMA_AGENT_NAME value.

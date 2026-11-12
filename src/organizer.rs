@@ -174,6 +174,8 @@ pub fn run(v: &Vault, state_dir: &Path, emb: &dyn Embedder, apply: bool, max_mov
     let cache_rebuilt = apply && !moved.is_empty();
     if cache_rebuilt {
         crate::graph::rebuild(v, &state_dir.join("graph.db"))?;
+        // moved notes have new paths and rewritten notes new text: embed them now, not next sweep
+        note_vectors(v, state_dir, emb, None, true)?;
     }
     if apply {
         update_block(v, state_dir, &mut sugg, &ticked, &proposals, now)?;

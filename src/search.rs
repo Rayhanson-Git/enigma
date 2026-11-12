@@ -188,6 +188,7 @@ pub fn save_cache(path: &Path, map: &Cache) -> Result<()> {
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let tmp = path.with_file_name(format!("{name}.{rand}.tmp"));
     let res = fs::write(&tmp, crate::json::compact(map))
+        .and_then(|_| crate::config::owner_only(&tmp, 0o600))
         .and_then(|_| crate::faults::os("cache_rename"))
         .and_then(|_| fs::rename(&tmp, path));
     if let Err(e) = res {

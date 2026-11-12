@@ -136,6 +136,15 @@ fn moved_once(d: &tempfile::TempDir, st: &Path) -> Value {
 }
 
 #[test]
+fn organizer_or_26() {
+    // after an applying sweep that moved a note, no note is left with a stale vector
+    let d = fixture();
+    let st = tempfile::tempdir().unwrap();
+    assert_eq!(froms(&sweep(&d, st.path(), true, None)), ["Loose Orbit Note.md"]);
+    assert!(enigma_mcp::search::stale_notes(&open(&d), st.path()).unwrap().is_empty());
+}
+
+#[test]
 fn organizer_or_25() {
     // a journal that cannot be written stops the sweep before any note moves
     let d = fixture();

@@ -18,7 +18,7 @@ Check first, and stop with a clear message if something is missing:
 Then run these in order. `<vault>` is the path the user gave you.
 
 1. Build: `cargo build --release`. The binary is `target/release/enigma-mcp`; use its absolute path below.
-2. Fetch the embedding model: `pip install -U huggingface_hub && hf download TaylorAI/bge-micro-v2`.
+2. Fetch the embedding model: `pip install -U huggingface_hub && hf download TaylorAI/bge-micro-v2 config.json tokenizer.json model.safetensors`.
 3. Install the vault guides and the `Claude/` folders: `enigma-mcp install-conventions <vault>`.
    It never overwrites an existing file. Show the user the list it prints.
 4. Preview the Obsidian plugins: `enigma-mcp provision <vault> --check`. Show the result and **ask** before
