@@ -55,8 +55,8 @@ What you get that a vector database behind an MCP wrapper does not give you:
   <img src="assets/graph-timelapse.gif" alt="Time-lapse of a real vault's graph in Obsidian: 2,935 nodes and 7,844 links appearing in the order they were created" width="100%">
 </p>
 
-<p align="center"><sub>A real vault in Obsidian's graph view, growing in the order its notes were created: 2,935 nodes and 7,844 links.
-The last frame is an unedited screenshot of the finished graph. Note titles are hidden.</sub></p>
+<p align="center"><sub>A real vault growing in the order its notes were created: 2,935 nodes and 7,844 links. Nodes spawn, find their
+neighbours and settle into the layout Obsidian's graph view gives them; the last frame is an unedited screenshot of that graph. Note titles are hidden.</sub></p>
 
 ### Who it is for
 

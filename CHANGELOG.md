@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- README: the graph time-lapse now shows nodes spawning, moving and linking before they settle into the real layout.
+
 ## 1.2.1
 
 - Search: entity notes under `Claude/Graph/` count half in the final ranking, so the note a person or agent
