@@ -26,14 +26,34 @@ fn write(path: &Path, text: &str) -> Result<()> {
     fs::write(path, text).map_err(|e| Error::io(&e, path))
 }
 
-/// The owner wording for the guides (15 §2 step 5).
-pub fn owner_name(owner: Option<&str>) -> String {
-    let raw = match owner {
-        Some(o) => o.to_string(),
-        None => std::env::var("ENIGMA_OWNER").unwrap_or_default(),
+/// The full name of the account running the command (the first field of its
+/// passwd entry), if it has one.
+pub fn system_owner() -> Option<String> {
+    // getpwuid returns a pointer into static storage; the name is copied out at once
+    let gecos = unsafe {
+        let pw = libc::getpwuid(libc::getuid());
+        if pw.is_null() || (*pw).pw_gecos.is_null() {
+            return None;
+        }
+        std::ffi::CStr::from_ptr((*pw).pw_gecos).to_string_lossy().into_owned()
     };
+    clean(gecos.split(',').next().unwrap_or_default())
+}
+
+/// Stripped, with each CR and LF turned into a space; None when nothing is left.
+fn clean(raw: &str) -> Option<String> {
     let name = raw.trim().replace(['\r', '\n'], " ");
-    if name.is_empty() { "the vault owner".into() } else { name }
+    (!name.is_empty()).then_some(name)
+}
+
+/// The owner wording for the guides (15 §2 step 5): the explicit owner, else
+/// ENIGMA_OWNER, else the system account's full name, else a neutral phrase.
+pub fn owner_name(owner: Option<&str>) -> String {
+    let named = match owner {
+        Some(o) => clean(o),
+        None => clean(&std::env::var("ENIGMA_OWNER").unwrap_or_default()).or_else(system_owner),
+    };
+    named.unwrap_or_else(|| "the vault owner".into())
 }
 
 /// install(vault, owner) → created vault-relative paths (15 §2).
@@ -46,9 +66,10 @@ pub fn install(vault: &Path, owner: Option<&str>) -> Result<Vec<String>> {
             created.push(f.to_string());
         }
     }
-    let guide = GUIDE.replace("{OWNER}", &owner_name(owner));
+    let owner = owner_name(owner);
+    let (constitution, guide) = (CONSTITUTION.replace("{OWNER}", &owner), GUIDE.replace("{OWNER}", &owner));
     for (rel, text) in
-        [("Claude/README.md", CONSTITUTION), ("Claude/Index.md", INDEX_SEED), ("Claude/Decisions.md", DECISIONS_SEED), ("CLAUDE.md", &guide), ("AGENTS.md", &guide)]
+        [("Claude/README.md", constitution.as_str()), ("Claude/Index.md", INDEX_SEED), ("Claude/Decisions.md", DECISIONS_SEED), ("CLAUDE.md", guide.as_str()), ("AGENTS.md", guide.as_str())]
     {
         let p = vault.join(rel);
         if p.symlink_metadata().is_err() {

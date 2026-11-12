@@ -56,14 +56,14 @@ cases:
     given: "ENIGMA_OWNER unset"
     then:
       - "CLAUDE.md and AGENTS.md are byte-identical to each other"
-      - "each equals GUIDE with every '{OWNER}' replaced by 'the vault owner'; neither contains '{OWNER}'"
+      - "each equals GUIDE with every '{OWNER}' replaced by the system account's full name, or by 'the vault owner' when the account has none; neither contains '{OWNER}'"
       - "each contains 'Routing rules', 'Claude/README' and 'search_brain'"
 
   - id: CV-06 owner personalisation
     table:
       - {owner_env: "Alex", expect_in_guides: "Alex"}
       - {owner_env: "  Sam\r\nLee  ", expect_in_guides: "Sam  Lee"}   # strip first, then CR and LF each become one space
-      - {owner_env: "   ", expect_in_guides: "the vault owner"}       # blank after strip -> neutral wording
+      - {owner_env: "   ", expect_in_guides: "the system account name, else the vault owner"}       # blank after strip -> treated as unset
     then: "with ENIGMA_OWNER set as shown, both guides contain the expected text and no '{OWNER}'. An owner passed explicitly to the install routine (used by provisioning and tests) wins over ENIGMA_OWNER, even when it is the empty string, which then yields 'the vault owner'"
 
   - id: CV-07 idempotent and never clobbers

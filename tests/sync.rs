@@ -118,11 +118,16 @@ fn sync_cv_01() {
     assert_eq!(created.join(", "), ALL_CREATED);
 }
 
+/// What an install writes when no owner is named: the account's full name, else the neutral phrase.
+fn default_owner() -> String {
+    conventions::system_owner().unwrap_or_else(|| "the vault owner".into())
+}
+
 #[test]
 fn sync_cv_02() {
     let (_s, v, _) = installed();
     let readme = fs::read(v.path().join("Claude/README.md")).unwrap();
-    assert_eq!(readme, spec("constitution/README.md"));
+    assert_eq!(String::from_utf8(readme.clone()).unwrap(), CONSTITUTION.replace("{OWNER}", &default_owner()));
     let text = String::from_utf8(readme).unwrap();
     assert!(text.starts_with("---\n") && text.contains("Constitution") && text.contains("Claude/Answers/") && text.contains("Claude/Digests/"));
     assert!(text.to_lowercase().contains("save what lasts"));
@@ -149,7 +154,7 @@ fn sync_cv_05() {
     let (_s, v, _) = installed();
     let claude = fs::read_to_string(v.path().join("CLAUDE.md")).unwrap();
     assert_eq!(claude, fs::read_to_string(v.path().join("AGENTS.md")).unwrap());
-    assert_eq!(claude, GUIDE.replace("{OWNER}", "the vault owner"));
+    assert_eq!(claude, GUIDE.replace("{OWNER}", &default_owner()));
     assert!(!claude.contains("{OWNER}"));
     assert!(claude.contains("Routing rules") && claude.contains("Claude/README") && claude.contains("search_brain"));
     assert_eq!(GUIDE.as_bytes(), spec("constitution/vault-guide.md"));
@@ -157,18 +162,23 @@ fn sync_cv_05() {
 
 #[test]
 fn sync_cv_06() {
-    for (owner, want) in [("Alex", "Alex"), ("  Sam\r\nLee  ", "Sam  Lee"), ("   ", "the vault owner")] {
+    for (owner, want) in [("Alex", "Alex".to_string()), ("  Sam\r\nLee  ", "Sam  Lee".to_string()), ("   ", default_owner())] {
         let s = Sandbox::new();
         let v = tempfile::tempdir().unwrap();
         s.run(&["install-conventions", v.path().to_str().unwrap()], b"", &[("ENIGMA_OWNER", owner)]);
         for g in ["CLAUDE.md", "AGENTS.md"] {
             let text = fs::read_to_string(v.path().join(g)).unwrap();
-            assert!(text.contains(want) && !text.contains("{OWNER}"), "{owner:?} in {g}");
+            assert!(text.contains(&want) && !text.contains("{OWNER}"), "{owner:?} in {g}");
         }
     }
     // an explicit owner wins over ENIGMA_OWNER, even when empty
     assert_eq!(conventions::owner_name(Some("")), "the vault owner");
     assert_eq!(conventions::owner_name(Some(" Pat ")), "Pat");
+    // the constitution names the owner too
+    let v = tempfile::tempdir().unwrap();
+    conventions::install(v.path(), Some("Pat")).unwrap();
+    let c = fs::read_to_string(v.path().join("Claude/README.md")).unwrap();
+    assert!(c.contains("belongs to Pat.") && !c.contains("{OWNER}"));
     let v = tempfile::tempdir().unwrap();
     conventions::install(v.path(), Some("")).unwrap();
     assert_eq!(fs::read_to_string(v.path().join("CLAUDE.md")).unwrap(), GUIDE.replace("{OWNER}", "the vault owner"));

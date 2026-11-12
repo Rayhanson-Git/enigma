@@ -24,7 +24,7 @@ including empty and unset, is off.
 | `ENIGMA_EXTRACT_MODEL` | when the extraction extractor is built | `haiku` | Model for entity extraction (claude backend only). | 06 |
 | `ENIGMA_CONSOLIDATE_MODEL` | when the consolidation extractor is built | `sonnet` | Model for duplicate adjudication (claude backend only). | 06, 07 |
 | `ENIGMA_AUTO_CLEANUP` | at sweep start when no CLI flag decides | off | Truthy: the Librarian applies mechanical graph repairs. | 08 |
-| `ENIGMA_OWNER` | when conventions are installed without an owner argument | `the vault owner` | Owner name placed in the root guides. | 15 |
+| `ENIGMA_OWNER` | when conventions are installed without an owner argument | the system account's full name, else `the vault owner` | Owner name placed in the constitution and the root guides. | 15 |
 | `ENIGMA_LAUNCHCTL` | each launchctl command of `schedule` | `/bin/launchctl` | Path of the launchctl binary that `schedule` runs; tests point it at a stub. | 15 §9.2 |
 | `CLAUDE_SETTINGS_PATH` | hook-sync | `~/.claude/settings.json` | Claude Code settings file that hook-sync inspects or edits. Name kept because it is that tool's file. | 15 |
 | `HF_HOME`, `HF_HUB_CACHE`, `HF_HUB_OFFLINE` | model load | Hugging Face defaults | Model cache location and offline mode. | §8 |

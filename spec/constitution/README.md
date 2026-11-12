@@ -12,7 +12,7 @@ before your first write in a session.
 ## Who owns what
 
 - `Claude/` is the agents' area. Write there freely, using the layout below.
-- Everything else in the vault belongs to the vault owner. Read it as much as
+- Everything else in the vault belongs to {OWNER}. Read it as much as
   you like, but write outside `Claude/` only when the owner explicitly asks,
   and confirm the exact path with them first.
 
@@ -106,9 +106,11 @@ edit it yourself.
 
 ## Organizer
 
-The vault owner has given the organizer standing permission to move notes
-inside the human topic folders on its own: notes sitting at the vault root
-and notes filed in the wrong topic folder. Each note goes where its nearest
+The organizer suggests where notes belong, and moves them only in runs that
+{OWNER} has started or scheduled with moves allowed. An agent's own call
+moves nothing unless the owner has set a move limit above zero. It looks at
+notes sitting at the vault root and notes filed in the wrong topic folder
+inside the human topic folders. Each note goes where its nearest
 semantic neighbours already live (a cosine vote over the 10 nearest notes,
 with a winning share of at least 0.7). The organizer never touches
 `Claude/`, `00 - Maps of Content`, folders whose names start with a dot,

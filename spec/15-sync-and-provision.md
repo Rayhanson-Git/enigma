@@ -18,7 +18,7 @@ Compiled into the binary byte for byte from the source tree:
 
 | Asset | Source | Installed as |
 |---|---|---|
-| CONSTITUTION | `spec/constitution/README.md` | `Claude/README.md` |
+| CONSTITUTION | `spec/constitution/README.md` | `Claude/README.md`, `{OWNER}` filled |
 | GUIDE | `spec/constitution/vault-guide.md` | `CLAUDE.md` and `AGENTS.md`, `{OWNER}` filled |
 | SKILLS | `skills/<name>/SKILL.md` for clip, connections, decide, digest, distill, dossier, recall, resume, rounds | `<dest>/<name>/SKILL.md` |
 | MCP MANIFEST | §6.1 | — |
@@ -52,9 +52,13 @@ Append-only log. One line per decision:
 
 ```
 
-5. owner name = `owner` when given (even empty), else `ENIGMA_OWNER` (unset →
-   empty); strip it, then replace each CR and each LF with one space; empty →
-   `the vault owner`. Guide text = GUIDE with every `{OWNER}` replaced.
+5. owner name = `owner` when given (even empty), else `ENIGMA_OWNER`, else the
+   full name of the system account running the command (the first field of
+   its passwd entry). Each candidate is stripped and has every CR and LF
+   replaced with one space; a candidate that is then empty is skipped (an
+   explicit empty `owner` skips straight to the fallback). Fallback:
+   `the vault owner`. Guide text = GUIDE, and constitution text =
+   CONSTITUTION, each with every `{OWNER}` replaced.
 6. For `CLAUDE.md` then `AGENTS.md` at the vault root: absent → write the guide
    text, record.
 
@@ -65,7 +69,7 @@ Existing files and folders are never touched. Writes are plain file writes
 `Usage: enigma-mcp install-conventions <vault-path>` + LF, exit 1. VAULT not a directory → stderr
 `Vault not found: {VAULT}` + LF, exit 1, nothing created. Otherwise stdout
 `Created: {created joined by ", "}` + LF, or `Created: nothing (already installed)`
-+ LF; exit 0. The owner comes only from `ENIGMA_OWNER`.
++ LF; exit 0. The owner comes from `ENIGMA_OWNER`, else the system account (step 5).
 
 ## 3. Hook: session-start
 
