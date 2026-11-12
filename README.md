@@ -11,9 +11,9 @@
   <img src="https://img.shields.io/badge/license-MIT-A31C1B" alt="MIT licence">
   <img src="https://img.shields.io/badge/rust-2024%20edition-171717" alt="Rust 2024 edition">
   <img src="https://img.shields.io/badge/MCP%20tools-25-1E3A2C" alt="25 MCP tools">
-  <img src="https://img.shields.io/badge/tests-502-1E3A2C" alt="502 tests">
+  <img src="https://img.shields.io/badge/tests-504-1E3A2C" alt="504 tests">
   <img src="https://img.shields.io/badge/retrieval%20MRR-1.00-1E3A2C" alt="Retrieval MRR 1.00 on the fixture set">
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20untested%20%7C%20Windows%20soon-171717" alt="macOS; Linux untested; Windows coming soon">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows%20soon-171717" alt="macOS and Linux; Windows coming soon">
 </p>
 
 <p align="center">
@@ -60,8 +60,9 @@ What you get that a vector database behind an MCP wrapper does not give you:
 ### Status
 
 Version 1.1.0. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
-Built and tested on macOS (Apple silicon). Linux should work, because the code only uses POSIX calls, but it has not been
-run there yet. Scheduling uses launchd, so the `schedule` command is macOS only.
+Built and tested on macOS (Apple silicon) and on Linux: every push is linted, tested and built on both by
+[GitHub Actions](https://github.com/Rayhanson-Git/enigma/actions). Daily use so far has been on macOS only.
+Scheduling uses launchd, so the `schedule` command is macOS only.
 
 > **Windows: coming soon.** Enigma does not build on Windows yet. Support is the next item on the roadmap.
 
@@ -346,7 +347,7 @@ In a new agent session, call the `onboard` tool first.
 
 ### Linux
 
-The same commands apply. Linux has not been verified yet, so please open an issue with what you find.
+The same commands apply. The test suite passes on Ubuntu in CI.
 The `schedule` command is macOS only; on Linux, run `enigma-mcp librarian <vault>` from cron or a systemd timer.
 
 ## MCP client configuration
@@ -555,7 +556,7 @@ spec/         the behaviour specification the code is written from
   acceptance/   one file of acceptance cases per area
   constitution/ the vault guides installed by install-conventions
   fixtures/     the fixture vault and golden queries used by tests and evals
-tests/        502 tests, one file per area of the specification
+tests/        504 tests, one file per area of the specification
 docs/         architecture and other guides
 assets/       logo and diagrams
 ```
