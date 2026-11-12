@@ -291,6 +291,9 @@ The skills are in [`skills/`](skills/) and are compiled into the binary. `enigma
 
 ## Quick start
 
+> **Using an AI agent?** Give it this repository's link and your vault's path. [AGENTS.md](AGENTS.md) tells it
+> which commands to run, which to preview first, and where to stop and ask you.
+
 You need:
 
 - A Rust toolchain that supports the 2024 edition (1.85 or newer).
@@ -558,6 +561,7 @@ spec/         the behaviour specification the code is written from
   fixtures/     the fixture vault and golden queries used by tests and evals
 tests/        504 tests, one file per area of the specification
 docs/         architecture and other guides
+AGENTS.md     setup instructions for AI agents
 assets/       logo and diagrams
 ```
 
