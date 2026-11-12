@@ -166,6 +166,12 @@ fn journal_path(state_dir: &Path) -> PathBuf {
     state_dir.join(JOURNAL)
 }
 
+/// Fails unless the journal can be appended to; called before a move so no move goes unrecorded (09 §5).
+pub fn journal_ready(state_dir: &Path) -> Result<()> {
+    let jp = journal_path(state_dir);
+    fs::OpenOptions::new().append(true).create(true).open(&jp).map(drop).map_err(|e| Error::io(&e, &jp))
+}
+
 /// record_move(record, share, neighbours) (09 §5).
 pub fn record_move(v: &Vault, state_dir: &Path, rec: &Value, share: f64, neighbours: &[String], now: &NaiveDateTime) -> Result<()> {
     let ts = second_stamp(now);
@@ -222,8 +228,7 @@ pub fn undo_move(v: &Vault, state_dir: &Path, path: &str, now: &NaiveDateTime) -
     Manifest::rename_entry(state_dir, &to, &from)?;
     entries[i]["undone"] = json!(true);
     let text: String = entries.iter().map(|e| format!("{}\n", crate::json::compact(e))).collect();
-    let jp = journal_path(state_dir);
-    fs::write(&jp, text).map_err(|e| Error::io(&e, &jp))?;
+    replace(&journal_path(state_dir), text.as_bytes())?; // temp file, then rename
     ensure_log(v)?;
     v.append(LOG_NOTE, &format!("- {} \u{2014} UNDID move of \u{60}{to}\u{60} back to \u{60}{from}\u{60}\n", second_stamp(now)), false)?;
     Ok(json!({"restored": from, "was": to}))

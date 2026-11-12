@@ -62,4 +62,6 @@ cases:
     then: an applying run with no proposals and no existing block writes no block (Organizer.md is not created by the suggestions logic alone); once a block exists and its last item goes, the block reads "_No open suggestions._"
   - id: OR-24 dry runs write nothing
     then: a dry run with proposals leaves Organizer.md and the suggestions state untouched (absent stays absent)
-
+  - id: OR-25 a journal that cannot be written stops the sweep
+    given: "the organizer fixture; the journal path in the state dir is a directory"
+    then: "an applying sweep fails with an IoError naming the journal, and no note has moved"

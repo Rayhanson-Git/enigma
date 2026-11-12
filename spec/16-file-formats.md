@@ -16,7 +16,7 @@ The state dir is `~/.enigma-mcp/<digest>/` or `ENIGMA_STATE_DIR` (01 §4).
 | `entity_vectors.json` | compact File JSON | consolidation blocking (07) | yes (temp + rename) | §5 |
 | `manifest.json` | indented File JSON | indexer (06), cleanup (12), mover (09) | no (written in place) | §6 |
 | `librarian_state.json` | indented File JSON | Librarian (08) | yes (via `librarian_state.json.tmp`) | §7 |
-| `organizer_journal.jsonl` | JSON Lines (compact) | organizer, undo (09) | append / whole rewrite | §8 |
+| `organizer_journal.jsonl` | JSON Lines (compact) | organizer, undo (09) | append; undo rewrites it through a temp file and a rename | §8 |
 | `organizer_suggestions.json` | indented File JSON | organizer (09 §3.1) | no (written in place) | §8.1 |
 | `eval_history.jsonl` | JSON Lines (compact) | evals (13) | append | §9 |
 | `caretaker.lock` | empty file, OS lock | caretakers (03 §10) | — | §10 |

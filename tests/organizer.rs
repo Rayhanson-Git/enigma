@@ -136,6 +136,17 @@ fn moved_once(d: &tempfile::TempDir, st: &Path) -> Value {
 }
 
 #[test]
+fn organizer_or_25() {
+    // a journal that cannot be written stops the sweep before any note moves
+    let d = fixture();
+    let st = tempfile::tempdir().unwrap();
+    std::fs::create_dir(st.path().join(JOURNAL)).unwrap();
+    let e = run(&open(&d), st.path(), &FnEmb(cluster), true, None, &now()).unwrap_err();
+    assert!(e.msg.contains(JOURNAL), "{}", e.msg);
+    assert!(d.path().join("Loose Orbit Note.md").is_file() && !d.path().join("02 - Orbit/Loose Orbit Note.md").exists());
+}
+
+#[test]
 fn organizer_or_09() {
     let d = fixture();
     let st = tempfile::tempdir().unwrap();

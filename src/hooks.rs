@@ -179,7 +179,12 @@ pub fn hook_sync(path: &Path, exe: &Path, install: bool) -> Result<Value> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| Error::io(&e, parent))?;
         }
-        std::fs::write(path, format!("{}\n", crate::json::indented(&settings))).map_err(|e| Error::io(&e, path))?;
+        // temp file, then rename: a crash can never leave settings.json cut short
+        let tmp = path.with_extension("json.enigma-tmp");
+        std::fs::write(&tmp, format!("{}\n", crate::json::indented(&settings))).and_then(|_| std::fs::rename(&tmp, path)).map_err(|e| {
+            let _ = std::fs::remove_file(&tmp);
+            Error::io(&e, path)
+        })?;
     }
     Ok(report)
 }

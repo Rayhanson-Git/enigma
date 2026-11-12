@@ -155,6 +155,7 @@ pub fn run(v: &Vault, state_dir: &Path, emb: &dyn Embedder, apply: bool, max_mov
             }
         } else {
             let protect = |p: &str| in_sheet_folder(v, p);
+            mover::journal_ready(state_dir)?;
             match mover::move_note(v, state_dir, c, &target, Some(&protect)) {
                 Ok(rec) => mover::record_move(v, state_dir, &rec, share, &neigh, now)?,
                 Err(e) if e.kind == Kind::ProtectedLink => {
