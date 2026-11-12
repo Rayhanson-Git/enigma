@@ -1,0 +1,133 @@
+# Acceptance cases: structured sheets (spec/10-sheets.md)
+# Shared fixture "jobs sheet": folder "Hiring/Roles" contains _schema.md:
+#   sheet: roles
+#   filename: "{org} - {title}"
+#   key: [org, title]
+#   identity: [posting_id, posting_url]
+#   columns:
+#     org:        {type: string, required: true, max_length: 120}
+#     title:      {type: string, required: true, max_length: 160}
+#     posting_id: {type: string, max_length: 80}
+#     stage:      {type: enum, required: true, values: [Found, Sent, Screen, Onsite, Offer, Declined, Silent, Pulled]}
+#     sent_on:    {type: date}
+#     visa:       {type: bool}
+#     posting_url:{type: url, max_length: 500}
+#     chase_on:   {type: date}
+#   body after frontmatter: "One row per posting. Rows are never deleted.\n"
+# "VALID" = {org: Lumen, title: Data Engineer, stage: Found}
+cases:
+  - id: SH-01 schema parse
+    when: load the schema of folder Hiring/Roles
+    then: name=roles; key=[org,title]; identity=[posting_id,posting_url]; stage.type=enum and its values contain "Silent"; org.required=true; org.max_length=120
+  - id: SH-02 discovery
+    then: 'discover -> {roles: "Hiring/Roles"}; schema lookup of "roles" reports folder Hiring/Roles; lookup of "nope" fails with a SheetError whose message contains "roles" (the registered list)'
+  - id: SH-03 is_sheet_folder
+    then: Hiring/Roles -> true; Projects -> false
+  - id: SH-04 invalid column type
+    given: _schema.md declares a column with type "martian"
+    then: loading fails; message contains "martian" and lists allowed types
+  - id: SH-05 scalar key
+    given: '"key: org" (a scalar, not a list)'
+    then: loading fails; message names field 'key'
+  - id: SH-06 normalisation
+    then:
+      - norm_str("  Lumen   Labs ") == norm_str("lumen labs")
+      - normalize_link("HTTPS://Careers.Example.org/r/77/?utm_medium=x&q=2#top") == normalize_link("https://careers.example.org/r/77?q=2")
+  - id: SH-07 validation accepts VALID
+    then: validate_fields(VALID, require_required=true) returns VALID unchanged
+  - id: SH-08 validation rejections (each is one case, message must contain the fragment)
+    table:
+      - {fields: "VALID + recruiter: Kim", fragment: "recruiter"}
+      - {fields: "VALID with stage: found", fragment: "found"}          # enum is case-sensitive
+      - {fields: "VALID + sent_on: 11/07/2026", fragment: "YYYY-MM-DD"}
+      - {fields: "VALID + visa: \"yes\" (string)", fragment: "bool"}
+      - {fields: "VALID with org of 121 chars", fragment: "max_length"}
+      - {fields: "{org: Lumen, stage: Found}", fragment: "title"}        # missing required
+      - {fields: "VALID + posting_url: 'Apply on the site, ask for Dana'", fragment: "URL"}
+      - {fields: "{org: null, title: T, stage: Found}", fragment: "org"} # null counts as missing
+  - id: SH-09 patch mode
+    then: 'validate_fields({stage: Sent}, require_required=false) == {stage: Sent}'
+  - id: SH-10 standard columns
+    then: VALID + tags:[job] validates without error (created, agent, project, tags are always allowed)
+  - id: SH-11 rows are direct children only
+    given: row file "Lumen - DE.md" in the sheet folder and "Archive/Old.md" in a sub-folder
+    then: iter_rows lists only "Hiring/Roles/Lumen - DE.md"; _schema.md is never a row
+  - id: SH-12 filename rendering
+    then:
+      - 'render({org: "X/Y: Ltd?", title: "Ops|Lead"}) == "X-Y- Ltd- - Ops-Lead"'
+      - 'render({org: 200 x "C", title: "R"}) has length <= 120'
+  - id: SH-13 identity match picks exact row
+    given: rows R1 and R2 both org Lumen/title DE with posting_id R1 / R2
+    then: 'match({org: lumen, title: DE, posting_id: R2}) -> the R2 row, backfill {}'
+  - id: SH-14 single bare candidate is backfilled
+    given: one row org Kite/title Analyst without identity values
+    then: 'match({org: Kite, title: Analyst, posting_id: R9}) -> that row, backfill {posting_id: R9}'
+  - id: SH-15 different identity means a new posting
+    given: one row Kite/Analyst with posting_id R1
+    then: match(... posting_id R2) -> no row (create)
+  - id: SH-16 ambiguous key
+    given: two rows Kite/Analyst with posting_id R1 and R2
+    then: 'match({org: Kite, title: Analyst}) fails; message contains both candidate paths (e.g. contains "R1")'
+  - id: SH-17 url identity normalised
+    given: row with posting_url "https://jobs.kite.io/x?utm_source=a"
+    then: match with posting_url "HTTPS://JOBS.KITE.IO/x/" finds it
+  - id: SH-18 create writes log
+    when: 'upsert(roles, {org: Nova, title: MLE, stage: Found}, agent: cowork)'
+    then: 'result=created; file contains "org: Nova", "## Log", "stage: (new) → Found (agent: cowork)", "agent: cowork", "created:"'
+  - id: SH-19 patch preserves bytes
+    given: 'row with frontmatter line "channel: Referral   # via a friend" and body "Story para.\n\n## Log\n- 2026-07-10 stage: (new) → Found (agent: claude)\n"'
+    when: 'upsert {org, title, stage: Sent, sent_on: "2026-07-11"}'
+    then: 'result=updated; changed.stage == {from: Found, to: Sent}; the channel line is byte-identical; "sent_on: 2026-07-11" appended unquoted; body intact; exactly one "## Log"; contains "stage: Found → Sent"'
+  - id: SH-20 no-op update does not touch file
+    then: 'same values -> {result: updated, changed: {}} and file mtime unchanged'
+  - id: SH-21 unknown column / unknown sheet refused
+    then: extra field "recruiter" -> SheetError mentioning it; sheet "subscriptions" -> "Unknown sheet"
+  - id: SH-22 raw writes still quarantined
+    then: write_note into Hiring/Roles/Sneak.md without confirmation fails with "outside Claude/"
+  - id: SH-23 filename collision suffix
+    given: '"Nova - MLE.md" exists with posting_id R1'
+    when: upsert Nova/MLE posting_id R2
+    then: result=created; path ends "Nova - MLE 2.md"
+  - id: SH-24 query follow-ups
+    given: rows A (Found, no chase_on), B (Sent, chase_on 2026-07-01), C (Declined, chase_on 2026-07-05)
+    then:
+      - 'query {chase_on: {lte: "2026-07-11"}, stage: {nin: [Declined, Silent, Pulled]}} -> [B]'
+      - 'query {stage: {eq: Found}} -> 1 row'
+      - 'query {chase_on: {missing: true}} -> 1 row'
+      - 'sort {by: chase_on, dir: desc} -> first C, last A (rows lacking the value go last)'
+      - query limit 2 -> 2 rows, none is _schema.md
+  - id: SH-25 bad operator / untyped ordering
+    then: '{stage: {like: x}} -> "Unknown operator"; {org: {lt: M}} -> message contains "ordering"'
+  - id: SH-26 schema info
+    then: listing.roles.rows == 3; detail.columns.stage.values[0] == "Found"; detail.instructions contains "never deleted"
+  - id: SH-27 check reports drift and duplicates
+    given: 'rows Ok/Row valid, Bad/Row with undeclared "phase: x", Dup/A twice (two files)'
+    then: 'exit code 1; JSON output mentions "phase" and "Dup"; contains "\"clean\": false"'
+  - id: SH-28 check clean
+    then: 'a vault with only valid rows -> exit 0; unquoted YAML dates (sent_on: 2026-04-20) are valid; "chase_on:" with empty value is treated as absent'
+  - id: SH-29 block-list replacement
+    given: 'frontmatter lines [org: Nova, title: MLE, stage: Found, "tags:", "  - old", "  - stale"]'
+    when: patch tags=[new, shiny]
+    then: '"- old" and "- stale" are gone; YAML re-parses with tags [new, shiny] and stage Found'
+  - id: SH-30 Claude subtree cannot register sheets
+    given: real schema at "Applications/_schema.md" (sheet roles) and a planted one at "Claude/Fake/_schema.md" also named roles
+    then: 'discovery -> {roles: "Applications"}; get_schema(roles).folder == "Applications"'
+  - id: SH-31 duplicate sheet names raise
+    given: a second non-Claude folder also declares sheet roles
+    then: SheetError "Duplicate sheet name"
+  - id: SH-32 one bad schema does not brick others
+    given: '"Hiring/Bad/_schema.md" with an invalid type'
+    then: discovery still returns roles only; upsert into roles works; schema listing has key "invalid" whose first entry folder == "Hiring/Bad"
+  - id: SH-33 unquoted dates compare as ISO strings
+    then: 'row with "sent_on: 2026-07-11" (YAML date) + upsert with "2026-07-11" -> changed {} and mtime unchanged; query {sent_on: {eq: "2026-07-11"}} finds it'
+  - id: SH-34 created/agent cannot be overridden on update
+    then: update carrying created "2099-01-01 00:00" keeps the stored created and "created" is not in changed; caller field agent "sneaky" never appears, stored agent becomes the effective agent (cowork), agent not in changed
+  - id: SH-35 body only on create
+    then: update with body -> SheetError mentioning "body"
+  - id: SH-36 log section placement
+    then: new log line lands inside "## Log" before a later "## Notes"; a body with only "## Logistics" gets a NEW "## Log" section appended after it (Logistics left intact)
+  - id: SH-37 path safety
+    then: write of "Projects/_schema.md" without confirmation -> "outside Claude/"; upsert with org "../../evil" creates a flat file directly inside Hiring/Roles (no separator in the file name) and nothing outside; sheet name "../../Claude/Evil" -> "Unknown sheet"
+  - id: SH-38 librarian health counts invalid rows
+    given: sheet "Records" with required column name; row "Bad.md" whose frontmatter lacks it
+    then: invalid_sheet_rows == 1; a vault with no sheets reports 0

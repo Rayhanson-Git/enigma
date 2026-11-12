@@ -1,0 +1,97 @@
+# Acceptance: Librarian caretaker (spec/08-librarian.md). NOW = 2026-07-09 12:00:00 local.
+# Fake embedder: vector [len(text), 0]. Fake extractor returns no entities. Fake consolidator returns {"merges": [...]}.
+cases:
+  - id: LB-01 constants
+    then: BACKSTOP_MIN_INTERVAL_DAYS=14; SLICE_SIZE=200; MAX_ENTITIES_PER_CALL=40; REPORT_MAX_SWEEPS=30; MAX_INDEX_ROUNDS=40
+  - id: LB-02 backstop clock
+    then: no marker -> not due; marker NOW and now=NOW+13d -> not due; NOW+14d -> due
+  - id: LB-03 state defaults and round trip
+    then: missing state -> last_sweep null, consolidation {}; save last_sweep "2026-07-09 12:00:00" then load -> same
+  - id: LB-04 interrupted save
+    given: a save that dies after writing half the bytes
+    then: the previously saved state is still loadable unchanged
+  - id: LB-05 corrupt state file
+    then: 'status() -> {status: "state file unreadable", error: ..., path: ...}'
+  - id: LB-06 manifest drift both directions
+    given: manifest tracks Ghost.md (absent); fixture note Daily.md untracked
+    then: deleted_but_tracked contains Ghost.md; present_but_untracked contains Daily.md
+  - id: LB-07 orphaned entities
+    given: entity note Claude/Graph/Organizations/Acme.md with mention of Projects/Gone (absent); cache rebuilt
+    then: '[{entity: Claude/Graph/Organizations/Acme, missing_note: Projects/Gone}]; mention of an existing note -> []; no cache db -> []'
+  - id: LB-08 cache consistency
+    then: 'after rebuild with 1 entity -> consistent true; add a second entity note without rebuild -> {db_entities: 1, md_entities: 2, consistent: false}'
+  - id: LB-09 pending proposals count
+    then: state pending [1 item] + organize proposals 2 -> 3 when consolidate did not run; when consolidate ran with 1 proposed -> 2+1 = 3
+  - id: LB-10 health check failure isolated
+    then: 'manifest drift check raising -> manifest_drift == {error: "<Kind>: kaput"}; other keys still present, stale_embeddings >= 0'
+  - id: LB-11 order
+    then: index step runs before organize step
+  - id: LB-12 drain loop
+    then: index rounds returning (processed 25, remaining 5) then (processed 5, remaining 0) -> totals processed 30, remaining 0; a round that never drains for 40 rounds -> step error containing "did not drain"
+  - id: LB-13 step failure isolation
+    then: 'organize raising -> errors.organize == "<Kind>: organize kaput"; steps.organize null; steps.consolidate non-null; health.sweep_errors.organize non-empty'
+  - id: LB-14 first consolidation pass
+    given: entities Acme and Acme Corp (organization); consolidator proposes merge Acme <- Acme Corp
+    then: 'steps.consolidate.ran true; proposed == [{type: organization, canonical: Acme, duplicates: [Acme Corp]}]; state.consolidation.checked_hash has both paths; pending_proposals == proposed'
+  - id: LB-15 unchanged second sweep skips
+    then: after a first sweep (1 consolidator call) and backstop marker set recent, a sweep 1 day later makes no new call
+  - id: LB-16 changed entity re-enters slice
+    then: editing Acme's body (identity changes) -> next sweep makes exactly one new call; a no-change sweep makes none
+  - id: LB-17 apply saves state
+    then: last_sweep == "2026-07-09 12:00:00"; state.steps has index; state.health has stale_embeddings
+  - id: LB-18 dry run touches nothing
+    then: 'dry run after a real sweep -> applied false; steps.index == {pending: 0}; every vault file byte-identical; state unchanged'
+  - id: LB-19 dry run from cold caches
+    given: two entities, no entity vector cache yet
+    then: dry run still runs consolidation (ran true) but writes nothing to the vault or state dir
+  - id: LB-20 report log never counts as pending
+    then: 'after two apply sweeps the index preview is {pending: 0}'
+  - id: LB-21 caretaker notes kept out of the manifest
+    then: raw manifest.json has neither Claude/Librarian.md nor Claude/Organizer.md (Organizer.md exists because the fixture sweep moves Daily.md)
+  - id: LB-22 first sweep has no false drift
+    then: 'health.manifest_drift == {deleted_but_tracked: [], present_but_untracked: []}'
+  - id: LB-23 move log never reaches the extractor
+    then: after undoing a move outside a sweep, the next sweep never extracts Claude/Organizer.md
+  - id: LB-24 report lines (formatter case, 08 §7.1)
+    given: 'a sweep result built by hand and passed straight to the report formatter with now = NOW: applied true; steps.index counts processed 3, failed 1, remaining 0; steps.organize with moved [1 record], proposals [2 records], skipped [1 record]; steps.cache {rebuilt: true, by: index}; no steps.cleanup value; steps.consolidate {ran: false, reason: "2 new entities since last pass; threshold 15", proposed: []}; health {stale_embeddings: 0, manifest_drift: {deleted_but_tracked: [], present_but_untracked: []}, orphaned_entities: [{entity: E, missing_note: N}], cache_consistency: {db_entities: 1, md_entities: 1, consistent: true}, pending_proposals: 2, sweep_errors: {}} with no invalid_sheet_rows key; errors {}'
+    then: 'the section starts "## Sweep 2026-07-09 12:00\n" and contains the lines "- index: processed 3, failed 1, remaining 0\n", "- organize: moved 1, proposals 2, skipped 1\n", "- cache: rebuilt (index)\n", "- cleanup: FAILED\n" (an absent step value prints as FAILED), "- consolidate: skipped (2 new entities since last pass; threshold 15)\n" (the reason is echoed verbatim even though a real sweep only produces the four reasons of 08 §3.5) and "- errors: none\n"; the health line contains "stale_embeddings 0 ✓", "orphaned_entities 1 ⚠" and "invalid_sheet_rows -1 ⚠" (a missing count prints -1)'
+  - id: LB-25 failed step lines (formatter case, 08 §7.1)
+    given: 'a hand-built result: steps.index null; steps.organize with empty lists; steps.cache {rebuilt: false, by: none}; steps.consolidate {ran: true, reason: "first pass", proposed: [1 item]}; health {stale_embeddings: 0, manifest_drift: {}, orphaned_entities: [], cache_consistency: {consistent: true}, pending_proposals: 1, sweep_errors: {index: "<Kind>: x"}}; errors {index: "<Kind>: x"}'
+    then: 'the section contains "- index: FAILED\n", "- consolidate: ran (first pass) — 1 merge proposals\n" (reason echoed verbatim) and "- errors: index: <Kind>: x\n"'
+  - id: LB-26 summary keeps skipped_batches and cleanup counters
+    given: "an applying sweep over MV with a duplicate pair; then hand-built step values: cleanup {retracted_notes: 2} (no auto_repair, no pending_repairs) and consolidate {ran: false, reason: \"no entities\", proposed: []} (no skipped_batches)"
+    then:
+      - "the stored state has steps.consolidate.skipped_batches, steps.consolidate.proposed as a count, and steps.cleanup with all nine counters"
+      - "the hand-built values summarise without error as cleanup {retracted_notes: 2, auto_repair: false, pending_repairs: null} and consolidate {ran: false, reason: \"no entities\", proposed: 0, skipped_batches: 0}"
+  - id: LB-27 report note
+    then: first write seeds "# Librarian" header; 33 appended sweeps keep exactly 30 (12:00..12:02 dropped, 12:03 and 12:32 kept); an apply sweep writes "## Sweep 2026-07-09 12:00"
+  - id: LB-28 CLI dry run
+    then: '"enigma-mcp librarian <vault> --dry-run" prints a report containing "## Sweep", then an empty line, then JSON with "\"applied\": false" (stdout is the report section + LF + the JSON + LF, so the JSON starts right after the first "\n\n{"); exit 0; output is UTF-8 even on a legacy-codepage console'
+  - id: LB-29 CLI exit on failure
+    then: any step error -> exit 1
+  - id: LB-30 first apply guard
+    then: no state file, no --dry-run, no --confirm-first-run -> usage error exit 2, Claude/Librarian.md not created; with --confirm-first-run -> apply; once state exists -> apply without the flag
+  - id: LB-31 auto-cleanup pass-through
+    then: --auto-cleanup sets auto_cleanup=true for the sweep
+  - id: LB-32 backstop stamping
+    then: first apply sweep stamps backstop_last_advance = NOW; after 13 days no extra calls; at 14 days calls increase; a carried-over state without the marker gets it stamped on an empty-slice sweep
+  - id: LB-33 cleanup inside sweep
+    given: entity Acme mentions Projects/Doomed (tracked in manifest, file absent); cache built
+    then: auto_cleanup=true -> retracted_notes 1, removed_mentions 1, "Doomed" gone from Acme.md, pending_retirements 1 with path Claude/Graph/Organizations/Acme
+  - id: LB-34 cleanup dry run
+    then: dry run -> cleanup.applied false, deleted_pending 1, Acme.md unchanged
+  - id: LB-35 prune consolidation keys
+    then: deleting an entity note after a sweep -> next sweep pruned_cache_keys == 2 (vector + checked hash); checked_hash == {}
+  - id: LB-36 pending retirements in health
+    then: state.cleanup.pending_retirements of length 1 -> health.pending_retirements 1
+  - id: LB-37 repairs report-only by default
+    given: ENIGMA_AUTO_CLEANUP unset, Doomed setup
+    then: 'cleanup.auto_repair false; retracted_notes 0; pending_repairs.deleted_notes 1; Acme.md unchanged; manifest still tracks Projects/Doomed.md; Librarian.md contains "cleanup: report-only" and "--apply-repairs"'
+  - id: LB-38 env opt-in
+    then: ENIGMA_AUTO_CLEANUP=1 -> retracted_notes 1
+  - id: LB-39 caretaker notes never count as stale
+    given: "MV plus Areas/Garden.md, with organize: false on Garden.md and Projects/Lighthouse Grid.md, so the only organizer outcome is a low-confidence proposal for Daily.md on every sweep (nothing moves)"
+    then: "two consecutive applying sweeps (12:00 and 12:05) both record the proposal in Claude/Organizer.md and both report health.stale_embeddings 0; a dry-run sweep after them also reports 0"
+  - id: LB-40 a stale user note still warns
+    given: "an applying sweep over MV, then Daily.md edited"
+    then: "a dry-run sweep reports health.stale_embeddings 1"

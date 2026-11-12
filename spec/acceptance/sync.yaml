@@ -1,0 +1,604 @@
+# Acceptance: conventions install, hooks, hook-sync, skill-sync, mcp-sync, provisioning, the nightly
+# runner and platform rules (spec/15-sync-and-provision.md, spec/14-cli.md, spec/16-file-formats.md).
+#
+# Isolation: every case runs with HOME, TMPDIR, ENIGMA_STATE_DIR and CLAUDE_SETTINGS_PATH pointing into
+# fresh temporary directories, passes --config / --dest explicitly where the command has them, and puts
+# stub executables (claude, codex) first on PATH. No case may read or write a real ~/.claude.json,
+# ~/.claude/, Obsidian vault or launchd directory.
+#
+# Bundled assets (shipped inside the binary, byte for byte):
+#   CONSTITUTION  = spec/constitution/README.md       -> installed as Claude/README.md
+#   GUIDE         = spec/constitution/vault-guide.md  -> installed as CLAUDE.md and AGENTS.md, {OWNER} filled
+#   SKILLS        = skills/<name>/SKILL.md, nine skills:
+#                   clip, connections, decide, digest, distill, dossier, recall, resume, rounds
+#   MCP MANIFEST  = the built-in server list of MS-01
+#   PLUGIN LOCK   = the 14 pinned Obsidian plugins of PV-01 with their sha256 locks (15)
+#   SMART ENV     = the .smart-env/smart_env.json overlay of PV-12
+#
+# EXE below is the absolute, canonical path of the running enigma-mcp executable.
+# "File JSON" is the CLI JSON style of 16 §3 (non-ASCII escaped as \uXXXX, separators ", " and ": ",
+# or indented by 2 spaces with "," at line ends). Printed lines end with one LF.
+cases:
+  # ---------------------------------------------------------------- conventions install
+  - id: CV-01 fresh install creates the tree
+    given: "an empty temporary directory V"
+    when: "enigma-mcp install-conventions VAULT, with VAULT = V"
+    then:
+      - "the created list is exactly, in this order: Claude/Inbox, Claude/Sessions, Claude/Concepts, Claude/Answers, Claude/Digests, Claude/README.md, Claude/Index.md, Claude/Decisions.md, CLAUDE.md, AGENTS.md (10 entries, '/' separators on every OS)"
+      - "the five Claude/ folders exist and are empty"
+      - "stdout is exactly 'Created: Claude/Inbox, Claude/Sessions, Claude/Concepts, Claude/Answers, Claude/Digests, Claude/README.md, Claude/Index.md, Claude/Decisions.md, CLAUDE.md, AGENTS.md' + LF; exit 0"
+
+  - id: CV-02 constitution
+    then:
+      - "Claude/README.md is byte-identical to CONSTITUTION"
+      - "it starts with '---\n', contains 'Constitution', 'Claude/Answers/', 'Claude/Digests/', and (case-insensitively) 'save what lasts'"
+
+  - id: CV-03 index seed
+    then: "Claude/Index.md is exactly '# Index\n\nMap of agent-written notes. Session entries append below.\n\n'"
+
+  - id: CV-04 decisions seed
+    then:
+      - |
+        Claude/Decisions.md is exactly these bytes (LF line ends, the dash in the format line is U+2014,
+        the file ends with one empty line):
+        ---
+        created: 2026-07-06
+        agent: claude
+        tags: [decisions]
+        ---
+
+        # Decisions
+
+        Append-only log. One line per decision:
+        `- YYYY-MM-DD — <decision> ([[session note]])`
+
+  - id: CV-05 root guides
+    given: "ENIGMA_OWNER unset"
+    then:
+      - "CLAUDE.md and AGENTS.md are byte-identical to each other"
+      - "each equals GUIDE with every '{OWNER}' replaced by 'the vault owner'; neither contains '{OWNER}'"
+      - "each contains 'Routing rules', 'Claude/README' and 'search_brain'"
+
+  - id: CV-06 owner personalisation
+    table:
+      - {owner_env: "Alex", expect_in_guides: "Alex"}
+      - {owner_env: "  Sam\r\nLee  ", expect_in_guides: "Sam  Lee"}   # strip first, then CR and LF each become one space
+      - {owner_env: "   ", expect_in_guides: "the vault owner"}       # blank after strip -> neutral wording
+    then: "with ENIGMA_OWNER set as shown, both guides contain the expected text and no '{OWNER}'. An owner passed explicitly to the install routine (used by provisioning and tests) wins over ENIGMA_OWNER, even when it is the empty string, which then yields 'the vault owner'"
+
+  - id: CV-07 idempotent and never clobbers
+    given: "a vault where CV-01 already ran, then Claude/Index.md was rewritten to '# Index\n\n- [[existing]]\n' and AGENTS.md to 'Keep my instructions'"
+    when: "install again with owner 'Someone Else'"
+    then:
+      - "the created list is empty; stdout is 'Created: nothing (already installed)' + LF; exit 0"
+      - "Claude/Index.md still contains 'existing'; AGENTS.md is still exactly 'Keep my instructions'"
+
+  - id: CV-08 partial install
+    given: "V contains only the folder Claude/Inbox and the file CLAUDE.md"
+    then: "the created list is Claude/Sessions, Claude/Concepts, Claude/Answers, Claude/Digests, Claude/README.md, Claude/Index.md, Claude/Decisions.md, AGENTS.md; CLAUDE.md is unchanged"
+
+  - id: CV-09 install-conventions errors
+    table:
+      - {when: "enigma-mcp install-conventions with no VAULT argument", then: "stderr exactly 'Usage: enigma-mcp install-conventions <vault-path>' + LF, stdout empty, exit 1 (not a usage error), nothing created"}
+      - {when: "enigma-mcp install-conventions VAULT, with VAULT = /tmp/x/missing", then: "stderr 'Vault not found: /tmp/x/missing' + LF; exit 1; nothing created"}
+      - {when: "the path names a regular file", then: "same as the missing case, naming that path"}
+
+  # ---------------------------------------------------------------- hook: session-start
+  # The hook reads one JSON payload from stdin. It must never block a session: it exits 0 in every
+  # case below and prints to stdout only the recall context block.
+  - id: HK-01 project inference from cwd
+    given: "ENIGMA_VAULT_PATH = a vault with Claude/Sessions/2026-11-02 Gravel bike tubeless setup.md (project gravel-bike)"
+    table:
+      - {cwd: "/home/ana/projects/gravel-bike", project: "gravel-bike"}
+      - {cwd: "C:\\Users\\ana\\code\\gravel-bike", project: "gravel-bike"}
+      - {cwd: "C:\\repo\\gravel-bike\\\\", project: "gravel-bike"}       # trailing separators stripped
+      - {cwd: "/home/ana/gravel-bike/", project: "gravel-bike"}
+      - {cwd: "  /srv/gravel-bike  ", project: "gravel-bike"}             # surrounding whitespace stripped
+    then: "for payload {\"cwd\": <cwd>} stdout equals exactly the stdout of 'enigma-mcp recall --vault <vault> --context --project <project>' (no newline added); exit 0. Both '/' and '\\' count as separators on every OS"
+
+  - id: HK-02 no project means silence
+    table:
+      - {stdin: "{}"}
+      - {stdin: "{\"cwd\": \"\"}"}
+      - {stdin: "{\"cwd\": null}"}
+      - {stdin: "{\"cwd\": \"/\"}"}
+      - {stdin: "(empty)"}                                    # empty stdin is read as {}
+    then: "stdout empty, stderr empty, exit 0; recall is not run"
+
+  - id: HK-03 garbage input
+    table:
+      - {stdin: "not json"}
+      - {stdin: "[1, 2]"}
+      - {stdin: "{\"cwd\": 42}"}
+    then: "stdout empty, exit 0"
+
+  - id: HK-04 vault missing
+    given: "ENIGMA_VAULT_PATH=/tmp/t/no-such-vault; stdin {\"cwd\": \"/tmp/t/gravel-bike\"}"
+    then: "stdout empty; stderr exactly \"enigma session-start: vault not found at '/tmp/t/no-such-vault'; set ENIGMA_VAULT_PATH to enable recall.\" + LF (the path rendered with quoted() of 00 §3.4); exit 0"
+
+  - id: HK-05 vault variable unset
+    given: "ENIGMA_VAULT_PATH unset or empty; stdin {\"cwd\": \"/tmp/t/gravel-bike\"}"
+    then: "stdout empty; stderr exactly 'enigma session-start: ENIGMA_VAULT_PATH is not set; set it to enable recall.' + LF; exit 0. There is no default vault path"
+
+  - id: HK-06 recall failure or timeout
+    then:
+      - "if producing the recall block fails or prints nothing, stdout is empty and exit is 0"
+      - "producing the block is bounded by 15 seconds; past that the hook prints nothing and exits 0"
+      - "stderr of the recall step is never copied to stdout"
+
+  # ---------------------------------------------------------------- hook: stop-nudge
+  # stdin carries {"transcript_path": P}; P is a JSONL transcript. NUDGE is exactly
+  #   Significant session with no log_session — consider filing a session log before finishing.
+  # (the dash is U+2014). TU(name) is the transcript line
+  #   {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "name": name, "input": {}}]}}
+  - id: HK-10 significant session without a log
+    given: "a transcript of 10 TU('Read') lines"
+    then: "stdout is exactly NUDGE + LF; stderr empty; exit 0"
+
+  - id: HK-11 threshold
+    table:
+      - {transcript: "9 TU('Read')", stdout: "(empty)"}
+      - {transcript: "10 TU('Read')", stdout: "NUDGE"}
+      - {transcript: "10 TU('Read') + TU('mcp__enigma__log_session')", stdout: "(empty)"}
+      - {transcript: "25 TU('Edit') + TU('log_session_v2')", stdout: "(empty)"}   # any name containing log_session
+      - {transcript: "2 TU('Read')", stdout: "(empty)"}
+    then: "exit 0 in every row"
+
+  - id: HK-12 counting rules
+    then:
+      - "every line is stripped; empty lines, lines that are not JSON, and JSON values that are not objects are skipped"
+      - "the message is entry.message when that key is present, otherwise the entry itself; a message that is not an object, or whose content is not a list, contributes nothing"
+      - "each content element that is an object with type == 'tool_use' counts once, whatever the entry's own type or role"
+      - "a log is seen when display(name) of any counted block contains 'log_session' (a missing name counts as '')"
+      - "['not json', '', TU('Read')] counts 1 with no log; a user line with string content counts 0"
+      - "a top-level line {\"content\": [{\"type\": \"tool_use\", \"name\": \"X\"}]} (no message key) counts 1"
+
+  - id: HK-13 silent failures
+    table:
+      - {stdin: "{}"}
+      - {stdin: "{\"transcript_path\": \"\"}"}
+      - {stdin: "{\"transcript_path\": \"/tmp/t/nope.jsonl\"}"}
+      - {stdin: "{\"transcript_path\": \"/tmp/t\"}"}                 # a directory
+      - {stdin: "not json"}
+    then: "stdout empty, exit 0"
+
+  - id: HK-14 undecodable bytes
+    given: "a transcript of 10 TU('Read') lines with a stray 0xFF byte inserted between two lines"
+    then: "invalid UTF-8 bytes are dropped (lenient read); the 10 tool uses still count; stdout NUDGE; exit 0"
+
+  # ---------------------------------------------------------------- hook-sync
+  # Settings file S = $CLAUDE_SETTINGS_PATH when set and non-empty, else ~/.claude/settings.json.
+  # Our entries: event SessionStart -> EXPECTED_SS = "\"EXE\" hook session-start"
+  #              event Stop         -> EXPECTED_ST = "\"EXE\" hook stop-nudge"
+  # (EXE wrapped in double quotes, then one space and the hook subcommand.)
+  # Recognition: a hook object belongs to us for an event when its command, after deleting every '"'
+  # character, contains "enigma-mcp hook <sub>" or "enigma-mcp.exe hook <sub>" (<sub> = session-start or
+  # stop-nudge). This is the "enigma-mcp hook" marker.
+  - id: HS-01 check on a missing file
+    given: "S does not exist"
+    when: "enigma-mcp hook-sync --check"
+    then:
+      - |
+        stdout is exactly (File JSON, indent 2, then LF):
+        {
+          "missing": [
+            "SessionStart",
+            "Stop"
+          ],
+          "present": [],
+          "drift": []
+        }
+      - "exit 1; S is not created"
+
+  - id: HS-02 install merges without clobbering
+    given: |
+      S = {"model": "sonnet", "hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "some-other-tool.exe"}]}],
+           "PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "lint.sh"}]}]}}
+    when: "enigma-mcp hook-sync --install"
+    then:
+      - "stdout is the classification taken before writing: missing [SessionStart, Stop], present [], drift []; exit 0"
+      - "model is still 'sonnet'; PreToolUse is unchanged"
+      - "hooks.SessionStart has 2 entries: the existing entry first, then {\"hooks\": [{\"type\": \"command\", \"command\": EXPECTED_SS}]}"
+      - "hooks.Stop is a new list with the single entry {\"hooks\": [{\"type\": \"command\", \"command\": EXPECTED_ST}]}"
+      - "S is rewritten as File JSON indented by 2 spaces plus a final LF; existing keys keep their order; a new 'hooks' key or a new event key is appended at the end of its object"
+
+  - id: HS-03 check never writes
+    then: "--check leaves S byte-identical (or absent) in every case, including when entries are missing"
+
+  - id: HS-04 drift is reported and left alone
+    given: "S = {\"hooks\": {\"SessionStart\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"/old/bin/enigma-mcp hook session-start\"}]}]}}"
+    then:
+      - "--check: drift [SessionStart], missing [Stop], present []; exit 1"
+      - "--install: the SessionStart entry is untouched and not duplicated (still 1 entry); hooks.Stop gets our entry; exit 0"
+
+  - id: HS-05 ours need not be the first hook of its entry
+    given: "S has one SessionStart entry whose hooks array is [{type: command, command: other-tool}, {type: command, command: EXPECTED_SS}]"
+    then: "--check reports SessionStart in present, not in drift (the matching hook's own command is compared)"
+
+  - id: HS-06 second install is idempotent
+    when: "--install twice on a missing S"
+    then: "the file after the second run is byte-identical to the file after the first; the second run prints missing [], present [SessionStart, Stop], drift []; each event has exactly 1 entry"
+
+  - id: HS-07 recognition rule
+    table:
+      - {command: "enigma-mcp hook session-start", event: SessionStart, class: "drift (unless it equals EXPECTED_SS)"}
+      - {command: "\"/opt/e/enigma-mcp\" hook stop-nudge", event: Stop, class: "drift when EXE differs"}
+      - {command: "C:\\e\\enigma-mcp.exe hook session-start", event: SessionStart, class: drift}
+      - {command: "enigma-mcp hook stop-nudge", event: SessionStart, class: "not ours for SessionStart (missing)"}
+      - {command: "some-other-tool.exe", event: SessionStart, class: "not ours (missing)"}
+    then: "entries without a 'hooks' list and hook objects without 'command' (treated as '') are skipped; the first matching hook object in file order decides"
+
+  - id: HS-08 settings edge cases
+    table:
+      - {S: "absent, empty or whitespace only", then: "treated as {}"}
+      - {S: "[]", then: "stderr 'error: <S>: settings.json must be a JSON object' + LF; exit 2; S unchanged"}
+      - {S: "{not json", then: "stderr starts with 'error: '; exit 2; S unchanged"}
+      - {S: "{\"hooks\": null}", then: "treated as no hooks; --install replaces nothing else and writes our two entries under a new hooks object"}
+      - {S: "{\"hooks\": [1]} or {\"hooks\": \"x\"}", then: "--check and --install: stdout empty; stderr 'error: InvalidData: <S>: \"hooks\" is not a JSON object; settings left unchanged' + LF; exit 1; S byte-identical"}
+      - {S: "{\"hooks\": {\"Stop\": {\"a\": 1}}} (or a string value)", then: "both modes: stderr 'error: InvalidData: <S>: hooks.Stop is not a list; settings left unchanged' + LF; exit 1; S byte-identical (the user's object is never discarded)"}
+      - {S: "{\"hooks\": {\"Stop\": [1, {\"hooks\": []}]}}", then: "both modes: stderr 'error: InvalidData: <S>: hooks.Stop holds an entry that is not a JSON object; settings left unchanged' + LF; exit 1; S byte-identical"}
+      - {S: "{\"hooks\": {\"PreToolUse\": \"odd\", \"Stop\": null}}", then: "other events are not inspected and a null event counts as none: --install exits 0, PreToolUse stays \"odd\", both our entries are written"}
+
+  - id: HS-09 arguments
+    table:
+      - {argv: "hook-sync", then: "usage error: exit 2, stderr contains 'specify --check or --install'"}
+      - {argv: "hook-sync --check --install", then: "behaves as --check (nothing written)"}
+    then: "the settings path comes only from CLAUDE_SETTINGS_PATH or the home default; tests always set CLAUDE_SETTINGS_PATH"
+
+  # ---------------------------------------------------------------- skill-sync
+  # Source = the nine bundled SKILLS. Destination D = --dest when given, else ~/.claude/skills.
+  # A skill is identical when the set of relative file paths under both directories and every file's
+  # bytes are equal. Result object keys, in order: installed, updated, up_to_date, drift (each a list of
+  # skill names in sorted order). Printed as File JSON indent 2 plus LF.
+  - id: SK-01 bundled skills are well formed
+    then:
+      - "the bundled set is exactly {clip, connections, decide, digest, distill, dossier, recall, resume, rounds}, each byte-identical to skills/<name>/SKILL.md"
+      - "each SKILL.md starts with '---\n'; its frontmatter (up to the first '\n---' after offset 4) parses as YAML with name == the folder name and a description longer than 40 characters"
+
+  - id: SK-02 installs into an empty destination
+    when: "enigma-mcp skill-sync --dest D (D absent)"
+    then: "installed lists all nine names in sorted order, the other lists are empty; D/<name>/SKILL.md exist and match the bundle byte for byte; D is created; exit 0"
+
+  - id: SK-03 never touches an edited skill without --force
+    given: "D/recall/SKILL.md = 'user edited this\n'"
+    then: "recall is in drift; the file still reads 'user edited this\n'; the other eight are installed; exit 0"
+
+  - id: SK-04 --force replaces drifted skills
+    given: "D/recall/SKILL.md = 'user edited this\n' and an extra file D/recall/notes.txt"
+    when: "skill-sync --dest D --force"
+    then: "recall is in updated; D/recall now holds exactly the bundled files (notes.txt is gone)"
+
+  - id: SK-05 identical skills
+    given: "D already holds a byte-identical copy of every skill"
+    then: "up_to_date lists all nine; nothing else; no file is rewritten (modification times unchanged)"
+
+  - id: SK-06 check mode
+    then:
+      - "--check reports what would happen (installed / drift) and writes nothing; D is not created"
+      - "--check exits 1 when installed or drift is non-empty, else 0"
+      - "--check --force still writes nothing and reports the edited skill under drift, not updated"
+
+  - id: SK-07 extra files and foreign skills
+    then:
+      - "an extra file inside D/<name>/ makes that skill drift"
+      - "folders in D that are not bundled skills are left alone and never reported"
+      - "a non-check run exits 0 even with drift"
+
+  # ---------------------------------------------------------------- mcp-sync
+  # Manifest = JSON {"servers": [entry, ...]}; entry fields name, transport (default "stdio"), command,
+  # url, args (default []), env (default {}), why (default ""). Config C = --config, default ~/.claude.json;
+  # its mcpServers object maps names to entries. Enigma never writes C itself: it only runs
+  # 'claude mcp add' for missing servers.
+  - id: MS-01 built-in manifest
+    then:
+      - "three servers in this order: enigma, fetch, arxiv"
+      - "enigma: transport stdio, command '{ENIGMA_BIN}', args [], env {ENIGMA_VAULT_PATH: '{VAULT}'}, why 'The memory vault: persistent shared memory for agents.'"
+      - "fetch: transport stdio, command 'uvx', args ['mcp-server-fetch@2026.6.4'], env {PYTHONIOENCODING: 'utf-8'}, why 'Web ingest: turns a URL into clean markdown for /clip.'"
+      - "arxiv: transport stdio, command 'uvx', args ['arxiv-mcp-server@0.5.0'], env {}, why 'Paper ingest: arXiv search and download as markdown. Paper content is untrusted input.'"
+      - "no entry contains an OS-specific path (no 'Scripts', '.venv' or drive letter)"
+
+  - id: MS-02 placeholders
+    then:
+      - "'{ENIGMA_BIN}' becomes EXE; '{REPO}' becomes the absolute directory that contains the manifest file in use (the current directory for the built-in manifest); '{VAULT}' becomes --vault, else ENIGMA_VAULT_PATH"
+      - "substitution applies to command, url, every arg and every env value; names, env keys and why are never substituted; the manifest data itself is not modified"
+      - "an entry that contains '{VAULT}' while no vault is known aborts the run: stdout 'ABORT (nothing changed): manifest entry needs {VAULT}: pass --vault or set ENIGMA_VAULT_PATH' + LF, exit 2, no subprocess started"
+      - "entries without '{VAULT}' resolve fine without a vault"
+
+  - id: MS-03 malformed manifest entry
+    given: "manifest {\"servers\": [{\"name\": \"broken\", \"transport\": \"stdio\"}]}"
+    then: "stdout \"ABORT (nothing changed): manifest entry 'broken': stdio transport requires a command (or provide a url)\" + LF (the name rendered with quoted(); a missing name renders as None); exit 2; nothing run"
+
+  - id: MS-04 config problems abort before anything runs
+    table:
+      - {C: "absent", then: "treated as no servers"}
+      - {C: "{broken", then: "stdout starts with 'ABORT (nothing changed): cannot parse <C>: ' followed by the JSON parser's one-line reason; exit 2"}
+      - {C: "{\"mcpServers\": []}", then: "stdout 'ABORT (nothing changed): unexpected structure in <C>: mcpServers must be an object' + LF; exit 2"}
+      - {C: "[\"not\", \"a\", \"dict\"]", then: "same message as the previous row; exit 2"}
+    then: "the config is read before the manifest, so a bad config wins over a bad manifest; no subprocess runs in any abort"
+
+  - id: MS-05 classification and report lines
+    given: "manifest [fetch (args ['mcp-server-fetch@2026.6.4']), arxiv]; C.mcpServers = {fetch: {type: stdio, command: uvx, args: ['mcp-server-fetch@2026.6.4'], env: {}}, somethingelse: {...}}"
+    when: "enigma-mcp mcp-sync --check --manifest M --config C"
+    then:
+      - "present [fetch], missing [arxiv], extras [somethingelse], drifted []"
+      - |
+        stdout lines in this order: all present, then all drifted, then extras (sorted), then missing (manifest order):
+        present : fetch
+        extra   : somethingelse (not in manifest; left alone)
+        MISSING : arxiv — <why of arxiv>
+      - "exit 1 (something missing)"
+
+  - id: MS-06 drift rules
+    then:
+      - "a url entry compares only url: 'url: config=<quoted(config url)> manifest=<quoted(manifest url)>'"
+      - "otherwise the first difference wins, in this order: command, args (list equality), then each env key of the manifest entry in manifest order; extra env keys in the config are ignored"
+      - "values are rendered with quoted() of 00 §3.4; an absent config value renders as None"
+      - |
+        config fetch args ['mcp-server-fetch@1.0.0'] gives exactly these two lines:
+        DRIFTED : fetch — args: config=['mcp-server-fetch@1.0.0'] manifest=['mcp-server-fetch@2026.6.4']
+          to fix drift manually: claude mcp remove --scope user fetch && re-run this sync
+      - "config env {PYTHONIOENCODING: utf-8, UNRELATED: '1'} against manifest env {PYTHONIOENCODING: utf-8} is present, not drift"
+
+  - id: MS-07 check exit codes
+    then: "--check exits 1 when anything is missing or drifted, else 0; it never looks for or runs the claude CLI"
+
+  - id: MS-08 registering missing servers
+    given: "a stub 'claude' first on PATH that records its argv and exits 0; manifest [fetch with env {PYTHONIOENCODING: utf-8}]; C.mcpServers = {}"
+    when: "enigma-mcp mcp-sync --manifest M --config C"
+    then:
+      - "stdout ends with 'register: claude mcp add --scope user fetch --env PYTHONIOENCODING=utf-8 -- uvx mcp-server-fetch@2026.6.4' + LF"
+      - "the stub ran once with argv[0] = the PATH-resolved claude path and the rest exactly: mcp add --scope user fetch --env PYTHONIOENCODING=utf-8 -- uvx mcp-server-fetch@2026.6.4"
+      - "exit 0; C is byte-identical afterwards"
+      - "a url entry registers as: claude mcp add --scope user --transport http <name> <url>"
+      - "env pairs follow the manifest's env order, one '--env K=V' pair each"
+
+  - id: MS-09 printed command quoting
+    then: "the text after 'register: ' always starts with the literal word claude (not the resolved path); on POSIX each word is printed bare when it consists only of A-Z a-z 0-9 and the characters @ % + = : , . / _ -, the empty word prints as '', and any other word is wrapped in single quotes with each embedded ' written as '\"'\"'; on Windows the words are joined with the standard command-line quoting rules of the Microsoft C runtime"
+
+  - id: MS-10 claude CLI missing
+    given: "no claude on PATH; two missing servers"
+    then:
+      - "stdout: the report lines, then one 'register: ...' line per missing server, then 'claude CLI not found on PATH. Run the printed command(s) manually, or install Claude Code. Nothing was registered.'"
+      - "exit 3; no subprocess attempted"
+
+  - id: MS-11 claude vanishes mid-run
+    given: "PATH lookup finds claude but starting it fails with not-found on the first of three missing servers"
+    then: "after the first register line, the register lines of the two remaining servers are printed, then 'claude CLI not found on PATH. Run the printed command(s) manually, or install Claude Code.'; exit 3"
+
+  - id: MS-15 read problems that are errors, not aborts
+    table:
+      - {when: "C exists but cannot be read (mode 000) or is a directory", then: "stdout empty; stderr 'error: IoError: <OS error>: <C>' + LF; exit 1"}
+      - {when: "--manifest M is not valid JSON", then: "stdout empty; stderr starts with 'error: SyncError: cannot parse <M>: ' (one line); exit 1"}
+      - {when: "--manifest M is {} , {\"servers\": {}} or []", then: "stdout empty; stderr 'error: SyncError: <M>: the manifest has no \"servers\" list' + LF; exit 1"}
+    then: "C is still read first (an unreadable C wins over a bad M); no subprocess runs"
+
+  - id: MS-16 claude cannot be started
+    given: "claude on PATH is an executable whose start fails with permission denied (e.g. a script whose interpreter is not executable); two servers missing"
+    then: "stdout ends with the first register line; stderr 'error: IoError: Permission denied (os error 13): <claude path>' + LF; exit 1; the second server is neither printed nor attempted; no FAILED line"
+
+  - id: MS-12 one registration fails
+    given: "the stub exits 4 for arxiv and 0 otherwise"
+    then: "after arxiv's register line stdout has '  FAILED (exit 4) — continuing with the rest'; later servers are still registered; final exit 1"
+
+  - id: MS-13 additive only
+    given: "manifest fetch args ['DIFFERENT@9.9.9']; C has fetch with other args"
+    when: "non-check run"
+    then: "fetch is reported DRIFTED, never re-registered; no subprocess runs; C is byte-identical; exit 0 (drift alone does not fail a non-check run)"
+
+  - id: MS-14 arguments
+    then:
+      - "--manifest pointing at a missing file: usage error, exit 2, stderr contains \"manifest not found at <path> — pass --manifest pointing at your checkout's mcp-servers.json\""
+      - "--vault defaults to ENIGMA_VAULT_PATH; --config defaults to ~/.claude.json; without --manifest the built-in manifest is used"
+      - "nothing missing and not --check: exit 0 without looking for claude"
+
+  # ---------------------------------------------------------------- provisioning
+  # Network access goes through one fetch(url) -> bytes | absent function. Library-level cases inject a
+  # fake fetcher serving synthetic assets with locks computed from those bytes; no case touches the
+  # network. Asset URL: https://github.com/{repo}/releases/download/{version}/{filename}.
+  # The real fetcher sends User-Agent 'enigma-mcp-provisioner', times out after 30 s, treats HTTP 404 as
+  # absent, and fails other statuses with 'download failed {url}: HTTP {code}' and transport errors with
+  # 'download failed {url}: {reason}' (ProvisionError).
+  - id: PV-01 bundled plugin lock
+    then:
+      - "14 plugins, in this order (id, repo, version): smart-connections brianpetro/obsidian-smart-connections 4.5.3; obsidian-tasks-plugin obsidian-tasks-group/obsidian-tasks 8.2.2; obsidian-livesync vrtmrz/obsidian-livesync 0.25.79; text-extractor scambier/obsidian-text-extractor 0.7.0; dataview blacksmithgu/obsidian-dataview 0.5.68; omnisearch scambier/obsidian-omnisearch 1.29.3; tag-wrangler pjeby/tag-wrangler 0.6.4; obsidian-kanban mgmeyers/obsidian-kanban 2.0.51; table-editor-obsidian tgrosinger/advanced-tables-obsidian 0.23.2; obsidian-importer obsidianmd/obsidian-importer 1.8.12; extended-graph ElsaTam/obsidian-extended-graph 2.7.6; graph-styler moonweave/obsidian-graph-styler 0.1.5; translucent-bg mellowmarsh-git/Obsidian-Translucent-BG 1.1.2; obsidian-style-settings mgmeyers/obsidian-style-settings 1.0.9"
+      - "every lock names manifest.json and main.js; text-extractor and tag-wrangler have no styles.css lock, the other twelve do"
+
+  - id: PV-02 lock validation (ProvisionError, exact messages; ENTRY = display() of the entry object, 00 §3.4)
+    table:
+      - {entry: "{id: x, repo: a/b}", message: "plugins.json entry missing 'version': {'id': 'x', 'repo': 'a/b'}"}
+      - {entry: "id, repo, version, no sha256", message: "plugins.json entry missing 'sha256' lock: ENTRY"}
+      - {entry: "sha256 {manifest.json: D}", message: "x: sha256 lock missing 'main.js'"}
+      - {entry: "sha256 {manifest.json: D, main.js: ABC}", message: "x: sha256 for 'main.js' is not 64 lowercase hex chars"}
+      - {entry: "sha256 {manifest.json: D, main.js: D in upper case}", message: "x: sha256 for 'main.js' is not 64 lowercase hex chars"}
+      - {entry: "sha256 {manifest.json: D, main.js: D, data.json: D}", message: "x: sha256 lock names unknown asset 'data.json'"}
+    then: "D is 64 lowercase hex digits; fields are checked in the order id, repo, version (missing or empty), then sha256 must be an object, then manifest.json and main.js must be present, then each lock entry in file order must be a known asset (manifest.json, main.js, styles.css) with a valid digest"
+
+  - id: PV-03 install one plugin
+    when: "install dataview 0.5.68 with a fetcher serving manifest.json ({\"id\": \"dataview\", \"version\": \"0.5.68\"}), main.js and styles.css that match the lock"
+    then: "returns installed; .obsidian/plugins/dataview/ holds the three files with exactly the served bytes"
+
+  - id: PV-04 already at the pin
+    then: "a second install returns ok and fetches nothing (installed version = 'version' of .obsidian/plugins/<id>/manifest.json; unreadable or invalid JSON counts as not installed)"
+
+  - id: PV-05 only locked assets are fetched
+    then: "with styles.css absent from the lock, its URL is never requested and no styles.css is written"
+
+  - id: PV-06 refusals write nothing
+    table:
+      - {fault: "manifest.json, main.js or styles.css bytes differ from the lock", message: "dataview: <file> sha256 <actual hex> does not match lock <expected hex> — refusing"}
+      - {fault: "a locked asset is absent (404)", message: "dataview: no <file> in release 0.5.68 of blacksmithgu/obsidian-dataview"}
+      - {fault: "the release manifest says id evil-other-plugin", message: "dataview: release manifest declares id 'evil-other-plugin' — refusing"}
+    then: "ProvisionError with the message shown; the folder .obsidian/plugins/dataview is not created. Assets are fetched and verified in lock order and the first failure stops; the manifest id is checked only after every asset verified"
+
+  - id: PV-07 enabling plugins
+    then:
+      - "with no .obsidian/community-plugins.json, enabling [dataview, omnisearch] returns both and writes [\"dataview\", \"omnisearch\"] as File JSON indent 2 with no final newline"
+      - "with an existing [\"users-own-plugin\", \"dataview\"], enabling [dataview, omnisearch] returns [omnisearch] and the file becomes [users-own-plugin, dataview, omnisearch]"
+      - "when nothing is added the file is not rewritten"
+
+  - id: PV-08 overlays never clobber
+    then:
+      - |
+        on a vault without .smart-env/smart_env.json, the overlay writes exactly this text followed by one LF (277 bytes)
+        and reports '.smart-env/smart_env.json':
+        {
+          "is_obsidian_vault": true,
+          "smart_sources": {
+            "min_chars": 200,
+            "embed_model": {
+              "adapter": "transformers",
+              "transformers": {
+                "model_key": "TaylorAI/bge-micro-v2"
+              }
+            }
+          },
+          "models": {
+            "embedding_platform": "transformers"
+          }
+        }
+      - "an existing smart_env.json (e.g. {\"user\": \"tweaked\"}) is left untouched and not reported"
+      - "bundled per-plugin overlays (none ship today) would go to .obsidian/plugins/<id>/data.json only when absent, reported as '<id>/data.json', in sorted id order before the smart-env entry"
+
+  - id: PV-09 provision a fresh vault
+    when: "provision an empty vault with a fetcher serving good assets for all 14 plugins"
+    then:
+      - "report keys in order: plugins, errors, enabled, overlays, conventions"
+      - "plugins maps all 14 ids to installed; errors {}; enabled lists all 14 in lock order; overlays ['.smart-env/smart_env.json']; conventions is the CV-01 list"
+      - "Claude/README.md exists"
+
+  - id: PV-10 provision is idempotent
+    then: "a second run reports every plugin ok, makes no fetch, and has enabled [], overlays [], conventions []"
+
+  - id: PV-11 one bad plugin is isolated
+    table:
+      - {fault: "dataview main.js is absent", then: "errors.dataview contains 'main.js'; omnisearch installed; dataview not in community-plugins.json"}
+      - {fault: "tag-wrangler main.js has extra bytes", then: "errors.tag-wrangler contains 'does not match lock'; .obsidian/plugins/tag-wrangler does not exist; community-plugins.json holds 13 ids"}
+
+  - id: PV-12 provision preconditions and check
+    then:
+      - "a vault path that is not a directory fails with ProvisionError 'Vault root does not exist: <path>' before anything is written"
+      - "check reports {id: {pinned, installed, status}} for all 14 in lock order; status ok when installed == pinned, missing when not installed, drift otherwise; installed is null when missing"
+
+  - id: PV-13 provision CLI
+    then:
+      - "'enigma-mcp provision V --check' prints the check report as File JSON indent 2 plus LF and changes nothing; exit 0"
+      - "'enigma-mcp provision V --check' with V missing or a regular file: no existence check, the report lists all 14 plugins with status missing and installed null, nothing on stderr, exit 0, nothing created"
+      - "'enigma-mcp provision V' prints the report as File JSON indent 2 plus LF; when errors is non-empty it then prints an empty line and 'WARNING: some plugins failed — re-run after checking pins/network.'; it always ends with the NEXT STEPS text below; exit 0"
+      - |
+        NEXT STEPS text, printed after one empty line, each line LF-terminated, followed by one more empty line:
+        Provisioning done. Remaining human steps:
+         1. Open the vault in Obsidian once and turn OFF Restricted Mode
+            (Settings -> Community plugins) so the installed plugins load.
+         2. Complete LiveSync setup via its Setup-URI flow — server URI and the
+            E2E passphrase live in your password manager, never in this repo.
+         3. Register the vault with the MCP server (enigma-mcp mcp-sync) and run the
+            index_brain tool to build the semantic graph.
+      - "without --check, a missing vault prints 'error: Vault root does not exist: <path>' to stderr and exits 2"
+
+  # ---------------------------------------------------------------- nightly runner
+  # enigma-mcp index-nightly <vault> [state-dir]. LOCK = $TMPDIR/enigma-index.lock (TMPDIR unset or empty:
+  # /tmp/enigma-index.lock), a directory holding a file 'pid' with the runner's pid and LF. STAMP is a
+  # second stamp (00 §3.5). A "round" runs the indexer exactly like 'enigma-mcp index <vault>' (default
+  # batch, no flags) and captures its stdout and stderr together. Stub extractor: a 'claude' script first
+  # on PATH that appends its environment to a log file and prints {"entities": [], "relations": []}.
+  # Cases that reach a round need the embedding model, as SV-19 does.
+  - id: NT-01 environment of a round
+    given: "a vault with one note; ENIGMA_EXTRACTOR, ENIGMA_EXTRACTOR_NO_TOOLS and HF_HUB_OFFLINE unset"
+    then:
+      - "the extractor runs with ENIGMA_VAULT_PATH = the vault, ENIGMA_EXTRACTOR = claude, ENIGMA_EXTRACTOR_NO_TOOLS = 1"
+      - "HF_HUB_OFFLINE stays unset (the runner never forces offline model loading); an explicit HF_HUB_OFFLINE=1 is passed through"
+      - "an explicit ENIGMA_EXTRACTOR_NO_TOOLS=0 or ENIGMA_EXTRACTOR=codex is kept; an empty value counts as unset and gets the default"
+      - "with a state-dir argument, ENIGMA_STATE_DIR is set to it for the run"
+
+  - id: NT-02 output and rounds
+    then:
+      - "the first line is '[STAMP] index-nightly start' and the last line of a normal run is '[STAMP] index-nightly done'; exit 0"
+      - "after each round the last 12 lines of its captured output are printed; the loop stops after the first round whose output contains the text \"remaining\": 0, and runs at most 20 rounds"
+      - "20 rounds without \"remaining\": 0 still end with the done line and exit 0"
+      - "a round that fails (non-zero exit, e.g. LockBusy because a Librarian sweep holds the caretaker lock) prints the last 5 lines of its output and the runner exits 1"
+
+  - id: NT-03 unreadable vault
+    given: "the vault path is missing or cannot be listed"
+    then: "after the start line, stdout 'cannot read vault (macOS privacy permission for enigma-mcp/launchd?)'; exit 2; no lock is created; no round runs"
+
+  - id: NT-04 stale lock from a dead run is reclaimed
+    given: "LOCK exists with pid = the pid of a process that has exited"
+    then: "stdout contains 'removing stale lock <LOCK> (pid <pid> is not running)'; exactly one round runs; exit 0; LOCK no longer exists afterwards"
+
+  - id: NT-05 lock without a pid file
+    given: "LOCK exists and is empty"
+    then: "stdout contains 'removing stale lock <LOCK> (pid unknown is not running)'; one round runs"
+
+  - id: NT-06 a live holder is respected
+    given: "LOCK/pid names a live process whose command line contains 'index-nightly'"
+    then: "stdout contains 'another index run (pid <pid>) holds <LOCK>; skipping'; exit 0; no round runs; LOCK and its pid file are untouched"
+
+  - id: NT-07 lock lifecycle
+    then:
+      - "the lock is created atomically (directory creation fails if it exists); if re-creation after reclaiming fails, stdout 'another run took <LOCK>; skipping' and exit 0"
+      - "LOCK is removed on every exit after it was taken (success, failed round, interrupt)"
+      - "a live pid whose command line does not contain 'index-nightly' is treated as stale"
+
+  - id: NT-08 indexer already running
+    given: "another process whose command line contains 'enigma-mcp index ' (with the trailing space) is running"
+    then: "after taking the lock: stdout 'indexer already running; skipping'; exit 0; no round; LOCK removed"
+
+  - id: NT-10 no vault argument
+    when: "enigma-mcp index-nightly"
+    then: "stderr exactly 'usage: enigma-mcp index-nightly <vault> [state-dir]' + LF; stdout empty (no start line); exit 1 (not a usage error); no lock is created"
+
+  - id: NT-11 interrupts
+    table:
+      - {signal: "INT, TERM or HUP to the runner's pid alone, during a round whose extractor takes 2 s", then: "the round is not cut short; when it ends the runner terminates by that signal (no exit code; a shell sees 128 + N); LOCK is removed; no further extractor call or round; no done line"}
+      - {signal: "INT, TERM or HUP to the runner's whole process group, during a round whose extractor would take 30 s", then: "everything stops at once (well under 30 s); the runner terminates by that signal; LOCK is removed; no done line"}
+
+  - id: NT-09 launchd templates
+    then:
+      - "two templates with placeholders {BIN} (EXE), {VAULT} and {HOME}; labels com.enigma.index and com.enigma.librarian"
+      - "com.enigma.index: ProgramArguments [{BIN}, index-nightly, {VAULT}]; StartCalendarInterval Hour 4 Minute 30; stdout and stderr to {HOME}/.enigma-mcp/index-nightly.log; PATH {HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+      - "com.enigma.librarian: ProgramArguments [{BIN}, librarian, {VAULT}]; environment ENIGMA_EXTRACTOR=claude, ENIGMA_EXTRACTOR_NO_TOOLS=1 and the same PATH; Hour 4 Minute 0; stdout and stderr to {HOME}/.enigma-mcp/librarian-task.log"
+      - "each template says, in an XML comment, that only one of the two should be installed (the Librarian sweep already indexes) and names 'enigma-mcp schedule install --job <job> VAULT' and 'enigma-mcp schedule uninstall --job <job>'"
+      - "only the librarian template carries the first-run note (a never-swept vault needs a manual --dry-run and --confirm-first-run); index-nightly has no first-run guard, so the index template has none"
+      - "rendered values are XML-escaped: a vault '/v/R&D <x>' renders as '/v/R&amp;D &lt;x&gt;'"
+
+  # ---------------------------------------------------------------- schedule (15 §9.2)
+  # HOME = temp; ENIGMA_LAUNCHCTL = a stub script that appends its arguments (one line per call) to a log and exits 0
+  # (or a forced code). DIR = HOME/Library/LaunchAgents. The real launchctl is never run.
+  - id: SC-01 install
+    when: "enigma-mcp schedule install --job index VAULT"
+    then: "DIR/com.enigma.index.plist equals the rendered index template (EXE, resolved vault, HOME); HOME/.enigma-mcp exists; the stub logged exactly 'bootstrap gui/<uid> <plist path>'; stdout 'installed: <P>' and 'loaded: com.enigma.index (gui/<uid>)'; exit 0"
+  - id: SC-02 print and dry run write nothing
+    then: "schedule print --job librarian VAULT and schedule install --dry-run --job librarian VAULT print the rendered plist, an empty line, '# would write <P>' and '# would run: <launchctl> bootstrap gui/<uid> <P>'; exit 0; DIR and HOME/.enigma-mcp are not created; the stub is never run"
+  - id: SC-03 only one job
+    given: "the index job is installed"
+    then: "schedule install --job librarian VAULT -> stderr 'error: com.enigma.index is already installed (<P'>); install only one of the two jobs. Remove it first with: enigma-mcp schedule uninstall --job index'; exit 2; nothing written; the stub is not run"
+  - id: SC-04 never overwrite a different plist
+    given: "DIR/com.enigma.index.plist holds other bytes"
+    then: "install -> stderr 'error: <P> exists and differs from the plist this command would install; re-run with --force to replace it', exit 2, file unchanged, stub not run; with --force -> the stub logs 'bootout gui/<uid>/com.enigma.index' then 'bootstrap gui/<uid> <P>' and P holds the rendered text"
+  - id: SC-05 identical plist
+    then: "a second install with the same vault prints 'already installed: <P>', exit 0, and runs nothing"
+  - id: SC-06 uninstall
+    then: "with the job installed: the stub logs 'bootout gui/<uid>/com.enigma.index', P is removed, stdout 'unloaded: com.enigma.index' and 'removed: <P>', exit 0; with nothing installed: stdout 'not installed: com.enigma.index', exit 0, the stub is not run; a failing bootout (stub exit 3) only warns and P is still removed"
+  - id: SC-07 protected folders
+    given: "VAULT under HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/V"
+    then: "stderr has one line starting 'warning: <vault> is in a folder macOS protects (<HOME>/Library/Mobile Documents)' and mentioning Full Disk Access; the job is still installed (exit 0); a vault outside the protected folders gives no such warning"
+  - id: SC-08 librarian first-run warning
+    then: "schedule install --job librarian on a vault with no Librarian state in its derived state dir warns 'warning: no Librarian sweep has run on this vault yet; ...' and still installs; after a Librarian state file exists there, no warning"
+  - id: SC-09 errors
+    then: "a missing VAULT for install or print -> usage error, exit 2; a vault that does not exist -> 'error: VaultError: Vault root does not exist: <path>', exit 1; a bootstrap that exits 5 -> stderr starts 'error: launchctl bootstrap failed (exit 5)', exit 1, P stays"
+
+  # ---------------------------------------------------------------- platform
+  - id: PL-01 hard-link fallback classification (create-only writes, 03 §5.2)
+    table:
+      - {os: posix, error: "EPERM (link not permitted)", meaning: "file system has no hard links -> exclusive-create fallback"}
+      - {os: posix, error: "EPERM on every link attempt", meaning: "one link attempt only (not retried), then the exclusive-create fallback succeeds"}
+      - {os: posix, error: "ENOTSUP, EXDEV or any other non-permission error", meaning: "no hard links -> fallback"}
+      - {os: posix, error: "EACCES", meaning: "a real error, reported"}
+      - {os: windows, error: "any permission or sharing error", meaning: "a lock: retried per the retry policy"}
+      - {os: windows, error: "any other error (e.g. invalid function on FAT or network shares)", meaning: "no hard links -> fallback"}
+      - {os: any, error: "target exists", meaning: "NoteExists"}
+
+  - id: PL-02 single binary
+    then:
+      - "every command in this file is a subcommand of the one enigma-mcp executable; no interpreter, virtual environment or script directory is needed"
+      - "text files Enigma writes outside notes (settings.json, community-plugins.json, plists it renders, state files) use LF line ends on every OS"

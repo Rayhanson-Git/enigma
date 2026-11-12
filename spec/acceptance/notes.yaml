@@ -1,0 +1,17 @@
+# Acceptance: agent note helpers (spec/03-vault-rules.md §Agent notes). NOW = 2026-07-05 14:30 local. Fixture MV.
+cases:
+  - {id: NO-01, then: "safe_filename('a/b\\c:d*e?f\"g<h>i|j') == 'abcdefghij'"}
+  - {id: NO-02, then: "safe_filename('///') == 'untitled'"}
+  - {id: NO-03, then: "safe_filename('Fix ]] the [[bug') == 'Fix the bug'; safe_filename('line1\nline2\ttab') == 'line1 line2 tab'"}
+  - id: NO-04
+    when: frontmatter(project lighthouse, tags [grid], created NOW)
+    then: 'starts ''---\n''; contains ''created: 2026-07-05 14:30'' (unquoted), ''agent: claude'', ''project: lighthouse'', ''- grid''; ends ''---\n\n'''
+  - id: NO-05
+    when: log_session('Relay setup', 'We configured the relay.', project enigma, tags [infra])
+    then: 'returns ''Claude/Sessions/2026-07-05 Relay setup.md''; note has ''agent: claude'' and the content; Claude/Index.md contains ''[[2026-07-05 Relay setup]]'' and ''enigma'''
+  - {id: NO-06, when: "capture('check bucket pricing') twice", then: "returns 'Claude/Inbox/2026-07-05.md'; first content '- 14:30 check bucket pricing\n'; two '- 14:30' lines after second"}
+  - {id: NO-07, when: "upsert_concept('DynDNS', 'Free dynamic DNS.')", then: "'Claude/Concepts/DynDNS.md', starts with frontmatter, has '# DynDNS' and the content"}
+  - {id: NO-08, when: "upsert_concept('Postgres', 'Used by the relay.')", then: "original body kept; '## Update 2026-07-05' added with new content"}
+  - {id: NO-09, when: "two log_session calls with title 'Standup' same day", then: "'… Standup.md' then '… Standup 2.md'; both indexed"}
+  - {id: NO-10, when: "upsert_concept('postgres', …)", then: "extends Claude/Concepts/Postgres.md; only one file whose name casefolds to postgres.md"}
+  - {id: NO-11, when: "frontmatter with project 'grid: outage [pipeline]' and tags ['odd\"tag', 'b:c']", then: "YAML re-parse yields exactly those values"}

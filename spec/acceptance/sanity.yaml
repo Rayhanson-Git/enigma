@@ -1,0 +1,43 @@
+# Acceptance: the binary builds, runs and reports its version (spec/14-cli.md, spec/00-overview.md,
+# spec/02-tools.md). These are the first cases any build must pass; they need no vault content except SN-05.
+# "VERSION" below is the package version in Cargo.toml ([package] version, currently 1.1.0).
+cases:
+  - id: SN-01 version flag
+    when: "enigma-mcp --version"
+    then: "exit 0; stdout is exactly 'enigma-mcp VERSION' followed by one LF (today: 'enigma-mcp 1.1.0\\n'); stderr is empty"
+
+  - id: SN-02 short version flag
+    when: "enigma-mcp -V"
+    then: "same stdout and exit code as SN-01"
+
+  - id: SN-03 version is real
+    then: "VERSION is non-empty, has the form MAJOR.MINOR.PATCH with ASCII digits, and equals the Cargo.toml package version; no other version string is hard-coded anywhere in the binary"
+
+  - id: SN-04 version needs no environment
+    given: "ENIGMA_VAULT_PATH, ENIGMA_STATE_DIR and HOME all unset; no model in the cache; no network"
+    when: "enigma-mcp --version"
+    then: "same result as SN-01: printing the version never loads the embedding model, opens a vault or creates a state dir"
+
+  - id: SN-05 server handshake reports the same version
+    given: "ENIGMA_VAULT_PATH = a temporary copy of spec/fixtures/vault; ENIGMA_STATE_DIR = a fresh temporary dir; the embedding model available"
+    when: "spawn 'enigma-mcp' with no subcommand (the stdio MCP server) and send an initialize request (id 1, protocolVersion '2024-11-05', empty capabilities, clientInfo {name: probe, version: '0'})"
+    then:
+      - "a response with id 1 arrives within 60 seconds (the model is loaded before the server starts serving, so this bound includes the warm start)"
+      - "result.serverInfo.name == 'enigma' and result.serverInfo.version == VERSION"
+      - "result.capabilities includes tools"
+
+  - id: SN-06 smoke call
+    given: "the session of SN-05 after the client sends the notifications/initialized notification"
+    when: "tools/call search_brain {query: 'probe', limit: 1} with id 2"
+    then:
+      - "a response with id 2 arrives within 30 seconds; messages without id 2 (notifications, logs) are skipped while waiting"
+      - "the result is not an error and holds a JSON array with at most 1 item"
+      - "closing stdin ends the server process with exit code 0 and nothing written into the vault copy"
+
+  - id: SN-07 help
+    when: "enigma-mcp --help"
+    then: "exit 0; stdout names the binary and lists exactly the subcommands of 14 §2, no more and no fewer: index, consolidate, organize, librarian, cleanup, sheets, recall, evals, index-nightly, install-conventions, mcp-sync, skill-sync, hook-sync, hook, schedule, provision"
+
+  - id: SN-08 unknown subcommand
+    when: "enigma-mcp no-such-command"
+    then: "exit 2; a usage message on stderr; stdout empty"

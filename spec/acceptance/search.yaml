@@ -1,0 +1,41 @@
+# Acceptance: search (spec/04-search.md). Part 1: BM25 + helpers. Fixture MV.
+cases:
+  - {id: BM-01, then: "tokenize('Lighthouse-Grid Pipeline!') == [lighthouse, grid, pipeline]"}
+  - {id: BM-02, given: "{a.md: 'the lighthouse grid pipeline ingests outage data', b.md: 'an unrelated note about weather patterns'}", when: "rank 'lighthouse pipeline'", then: "[a.md] only"}
+  - {id: BM-03, given: "{common.md: 'the the the the the project project', rare.md: 'zephyr appears exactly once here'}", when: "rank 'zephyr'", then: "first is rare.md"}
+  - {id: BM-04, then: "empty corpus -> []; unknown term -> []"}
+  - {id: BM-05, then: "10 identical docs, limit 3 -> 3 results"}
+  - {id: SE-01, then: "note iteration never yields .obsidian paths; folder 'Claude' yields only Claude/ paths"}
+  - {id: SE-02, then: "unfiltered candidates include Projects/Lighthouse Grid.md and Daily.md"}
+  - {id: SE-03, then: "tags [grid] -> [Projects/Lighthouse Grid.md]; tags [GRID] same; tags [grid, project] non-empty; tags [grid, nope] -> []"}
+  - {id: SE-04, given: "Scalar.md with 'tags: solo'", then: "tags [solo] -> [Scalar.md]"}
+  - {id: SE-05, then: "as_str_list(null)=[]; ('one')=[one]; ([a, 2])=[a, '2']"}
+  - {id: SE-06, then: "body_text('---\ntags: [x]\n---\n\n# T\n\nBody.\n') == '\n\n# T\n\nBody.\n'; no frontmatter -> unchanged; unclosed fence -> unchanged"}
+
+# Part 2: hybrid search. Keyword fake embedder: vector = [has "freight", has "baking", has "budget"] (1.0/0.0 per word).
+# Semantic fake embedder: text containing "owe" or "invoice" -> [1,0], otherwise [0,1].
+  - {id: HY-01, given: "Contractors.md 'Outstanding invoices from contractors need review.\n'", when: "query 'who do I owe money to' (semantic embedder)", then: "Contractors.md is in the hits although no token is shared"}
+  - {id: HY-02, then: "rrf_fuse([[x,y,z],[y,x,z]]) puts x or y first and z last; rrf_fuse([[x],[]]) == [x]; rrf_fuse([[],[]]) == []"}
+  - {id: HY-03, given: "Freight.md 'This note is about supply chain freight operations.'", when: "query 'freight'", then: "Freight.md in hits"}
+  - {id: HY-04, when: "query 'e' with tags [grid]", then: "exactly [Projects/Lighthouse Grid.md] (substring fallback because 'e' yields no BM25 hit)"}
+  - {id: HY-05, then: "5 notes 'shared keyword here', limit 2 -> 2 hits"}
+  - {id: HY-06, then: "query 'zzzznomatch' with the keyword embedder -> [] (all vectors zero so cosine 0 and dropped)"}
+  - {id: HY-07, given: "aaa.md 'an important announcement was made' and zzz.md 'the port of hamburg is busy'", when: "query 'port'", then: "zzz.md present, aaa.md absent (substring lane is off when BM25 has hits)"}
+  - {id: HY-08, then: "excerpt of '---\ntags: [x]\n---\n\n# Title Line\n\nReal content here.\n' for an unrelated query is '# Title Line'"}
+  - {id: HY-09, then: "excerpt of '---\ntags: [billing]\n---\n\nInvoice for the billing cycle.\n' for 'billing' is 'Invoice for the billing cycle.' (never a frontmatter line)"}
+  - {id: HY-10, then: "frontmatter-only note -> excerpt ''"}
+  - {id: HY-11, then: "path Claude/Sessions/Weekly Review.md, query 'weekly' -> '(title match)'"}
+  - {id: HY-12, then: "semantic-only hit on a note with frontmatter returns the first body line as excerpt"}
+# Part 3: vectors. Fake embedder [len(text), 0].
+  - {id: EM-01, given: "fresh Smart Connections vector [1,2] for Daily.md and fresh vectors for every other note", then: "Daily.md vector is [1,2]; the embedder is never called"}
+  - {id: EM-02, given: "Smart Connections vector older than the note", then: "fallback vector used; embedder called"}
+  - {id: EM-03, then: "no Smart Connections data -> every note embedded locally; second call embeds nothing (cache hit)"}
+  - {id: EM-04, then: "after warming the cache, stale list is []; editing Daily.md -> ['Daily.md']; computing the stale list never creates fallback_embeddings.json"}
+  - {id: EM-05, then: "cache memo returns on-disk content; an out-of-process rewrite with a new mtime is picked up; a corrupt file loads as {}; mutating a loaded map does not change what the next load returns"}
+  - {id: EM-06, given: "atomic replace fails with a lock error", then: "error surfaces; only the old cache file remains (no temp file); old content still loads"}
+  - {id: EM-07, then: "persist=false returns vectors and writes no cache file"}
+# Part 4: Smart Connections reader
+  - {id: SC-01, then: "entry with last_embed.at after the note mtime -> {vec: [0.1,0.2,0.3], fresh: true}; before -> fresh false"}
+  - {id: SC-02, then: "duplicate key in one file: the later line wins"}
+  - {id: SC-03, then: "no .smart-env directory -> {}"}
+  - {id: SC-04, then: "smart_blocks:* keys ignored; only Daily.md listed"}

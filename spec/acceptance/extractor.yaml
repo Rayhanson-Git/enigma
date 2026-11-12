@@ -1,0 +1,24 @@
+# Acceptance: CLI extractor (spec/06-indexer-extractor.md). The process runner and PATH lookup are injectable fakes.
+# GOOD = {entities: [{Orbital Freight, organization, [ORBF], "A company."}, {Trade Routes, domain, [], "Logistics domain."}], relations: [{Orbital Freight -operates_in-> Trade Routes, evidence "ships cargo"}]}
+cases:
+  - {id: EX-01, then: "the extraction prompt (lower-cased) mentions file path/file name/filename, 'canonical' and 'alias'"}
+  - {id: EX-02, then: "coercion keeps GOOD as is"}
+  - {id: EX-03, then: "unknown entity type 'spaceship' -> topic; unknown rel 'zaps' -> related_to; unknown endpoint types -> topic; aliases null -> []"}
+  - {id: EX-04, then: "blank names / blank endpoints are dropped"}
+  - {id: EX-05, then: "backend codex runs ['codex','exec',...]; claude runs ['claude','-p',...]"}
+  - {id: EX-06, given: "ENIGMA_EXTRACTOR_NO_TOOLS = 0 vs unset, 1 or an unrecognised value", then: "0: no isolation flags; otherwise: claude gets '--tools' '' and '--strict-mcp-config' (never '--mcp-config'); codex gets '--sandbox' 'read-only'"}
+  - {id: EX-07, then: "JSON surrounded by prose parses; a bad first reply triggers exactly one retry which succeeds; two bad replies -> ExtractorError"}
+  - {id: EX-08, then: "exit 1 with stderr 'boom' -> ExtractorError containing 'boom'"}
+  - {id: EX-09, then: "backend 'gpt9000' -> 'Unknown backend' when the extractor is created; ENIGMA_EXTRACTOR=claude selects claude"}
+  - {id: EX-10, then: "entity types contain organization; relations contain related_to"}
+  - {id: EX-11, then: "note content goes through stdin, never argv; 100 KB content works"}
+  - {id: EX-12, then: "timeout -> 'timed out'; spawn failure -> 'failed to run'; not on PATH -> creating the extractor succeeds and each invocation fails with ExtractorError '<backend> CLI not found on PATH' without running or retrying anything"}
+  - {id: EX-13, then: "two JSON objects in output: no crash; a fenced block tagged json is preferred over stray braces elsewhere in the output"}
+  - {id: EX-14, then: "resolved '.cmd' shim runs as ['cmd','/c',<path>,'exec']; '.ps1' as ['powershell','-NoProfile','-ExecutionPolicy','Bypass','-File',<path>,'exec']; '.exe' directly"}
+  - {id: EX-15, then: "complete_json('any prompt') with reply '{\"merges\": []}' -> {merges: []}; two junk replies -> ExtractorError"}
+  - {id: EX-16, then: "claude with model haiku ends with ['--model','haiku']; codex never gets --model; no model -> no flag"}
+  - {id: EX-17, then: "factories default to models haiku (extraction) and sonnet (consolidation); ENIGMA_EXTRACT_MODEL / ENIGMA_CONSOLIDATE_MODEL override"}
+  - {id: EX-18, then: "stderr summary picks the LAST line matching ERROR/FATAL (e.g. 'ERROR: usage limit hit'); otherwise last 300 chars; empty/null/blank -> ''"}
+  - {id: EX-19, then: "PATH is searched at each invocation: a lookup that fails on the first call and succeeds on later calls gives one 'codex CLI not found on PATH' error, then runs the executable found at each later call"}
+  - {id: EX-20, given: "ENIGMA_EXTRACTOR, ENIGMA_EXTRACT_MODEL and ENIGMA_CONSOLIDATE_MODEL set to the empty string", then: "creating an extractor with no explicit backend -> ExtractorError 'Unknown backend: ' (empty name); with backend claude, neither factory adds --model"}
+  - {id: EX-21, then: "prompt(path, content) equals the normative text of 06 §5.3 byte for byte with {path} and {content} replaced once each (LF line ends, no trailing LF, one U+2014); placeholder text inside the path or content is sent unchanged"}

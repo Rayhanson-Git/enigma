@@ -1,0 +1,126 @@
+# Golden queries for the fixture vault in spec/fixtures/vault/ (29 notes).
+# Format: spec/13-evals.md (id, query, expect, accept, tags, folder, note).
+# Paths are vault-relative with "/" separators; every path exists (EV-09).
+#
+# How the expectations were reasoned (BM25 lane = BM25L over the full raw
+# note text, tokens are lowercase ASCII [a-z0-9]+; fusion = RRF k=60):
+# - When the target is the ONLY note with a BM25 score > 0 for the query, it
+#   is rank 1 whatever the embedder does: its fused score is at least
+#   1/61 + 1/(60+v), and every other note can reach at most 1/61 (vector
+#   lane only). Those rows are marked "sole BM25 hit".
+# - When other notes also score, the target leads BM25 by a wide margin;
+#   the runner-ups that a strong vector rank could lift above it are listed
+#   under accept, so the row still scores rank 1.
+# - substr-kanji has no ASCII tokens, so BM25 is empty and the substring
+#   fallback lane decides; the target is the only note containing the text.
+# - para-query shares no token with any note in the vault, so BM25 and the
+#   substring lane are both empty and the result is pure vector ranking
+#   (bge-micro-v2, mean pooling, raw text including frontmatter).
+#
+# BM25 standings (score, rounded) were computed on these exact notes and are
+# given in each note field.
+
+- id: kw-varroa
+  query: varroa mite treatment
+  expect: [Notes/Varroa Mites.md]
+  accept:
+    - Projects/Apiary Expansion.md
+    - Claude/Graph/Topics/Beekeeping.md
+  note: keyword lane; BM25 Varroa Mites 16.7, Beekeeping 9.6, Apiary Expansion 8.6
+
+- id: kw-cassette
+  query: cassette derailleur hanger
+  expect: [Projects/Gravel Bike Rebuild.md]
+  note: sole BM25 hit (10.8)
+
+- id: kw-radiator
+  query: radiator bleeding pressure gauge
+  expect: [Areas/Home/Boiler Service.md]
+  note: keyword lane; BM25 Boiler Service 24.0, Tubeless Tyres 2.8 (shares only "pressure")
+
+- id: kw-pension
+  query: employer match pension
+  expect: [Areas/Money/Pension Contributions.md]
+  note: sole BM25 hit (18.0)
+
+- id: kw-borrow
+  query: borrow checker lifetimes
+  expect: [Notes/Ownership and Borrowing.md]
+  accept: [Claude/Sessions/2026-11-05 Rust CLI argument parsing.md]
+  note: keyword lane; BM25 Ownership and Borrowing 9.8, the session note 2.9 ("borrow error")
+
+- id: kw-tempo
+  query: tempo run cadence
+  expect: [Areas/Health/Running Plan.md]
+  note: keyword lane; BM25 Running Plan 12.7, then weak "run" hits from "dry-run" (Tasks 2.2, Rust CLI Port 2.0)
+
+- id: title-flapjacks
+  query: honey oat flapjacks
+  expect: [Recipes/Honey Oat Flapjacks.md]
+  note: title match (excerpt "(title match)"); BM25 21.4, next best Claude/Inbox/2026-11-06.md 2.8
+
+- id: tag-bees-honey
+  query: honey
+  tags: [bees]
+  expect: [Projects/Apiary Expansion.md]
+  note: >
+    tag filter; only Apiary Expansion and Varroa Mites carry the bees tag, and
+    only Apiary Expansion says "honey", so it is the sole BM25 hit. The
+    flapjack recipe and the meadow idea also mention honey or bees but are
+    excluded by the filter.
+
+- id: folder-sessions-tubeless
+  query: tubeless
+  folder: Claude/Sessions
+  expect: [Claude/Sessions/2026-11-02 Gravel bike tubeless setup.md]
+  note: folder filter; the concept note and the bike project also say tubeless but sit outside the folder
+
+- id: kw-burping
+  query: tubeless sealant burping
+  expect: [Claude/Concepts/Tubeless Tyres.md]
+  accept:
+    - Claude/Sessions/2026-11-02 Gravel bike tubeless setup.md
+    - Projects/Gravel Bike Rebuild.md
+  note: keyword lane; "burping" only in the concept note; BM25 Tubeless Tyres 13.9, session 6.9
+
+- id: substr-kanji
+  query: "漢字"
+  expect: [Notes/Japanese Study.md]
+  note: no ASCII tokens, BM25 empty; the substring fallback lane matches only Japanese Study
+
+- id: entity-mara
+  query: Mara Lindqvist
+  expect: [Claude/Graph/People/Mara Lindqvist.md]
+  accept:
+    - Projects/Apiary Expansion.md
+    - Claude/Graph/Organizations/Northfield Beekeepers Association.md
+  note: entity note; BM25 entity note 10.9 (name in H1 and alias), Apiary Expansion 5.7
+
+- id: kw-iron-gall
+  query: iron gall ink nib
+  expect: [Notes/Fountain Pen Inks.md]
+  note: sole BM25 hit (31.3)
+
+- id: kw-meadow
+  query: wildflower meadow seed mix
+  expect: [Inbox/Idea pollinator meadow.md]
+  note: sole BM25 hit (16.2); this note has no frontmatter
+
+- id: sheet-author
+  query: Susanna Clarke
+  expect: [Books/Piranesi.md]
+  note: sheet row; sole BM25 hit (21.0); the author appears in frontmatter and body
+
+- id: kw-novel
+  query: chapter outline protagonist
+  expect: [Projects/Lantern Keeper Novel.md]
+  note: keyword lane; BM25 Lantern Keeper Novel 10.0, Japanese Study 3.3 ("chapter")
+
+- id: para-query
+  query: puppy vaccination clinic
+  expect: [Inbox/Biscuit vet reminder.md]
+  note: >
+    paraphrase with zero token overlap with any note (the target says young
+    beagle, rabies jab, booster shots, vet, surgery). BM25 and substring
+    lanes are empty, so this row measures the embedder alone. It is the only
+    pet or medical note in the vault; floor: within the top 10 (EV-18).

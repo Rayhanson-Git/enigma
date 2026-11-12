@@ -1,0 +1,28 @@
+# Acceptance: incremental indexer (spec/06-indexer-extractor.md). Fixture MV, ENIGMA_STATE_DIR = temp/state.
+# Fake extractor: returns a configured extraction per path (default: empty), fails with ExtractorError for listed paths, records calls.
+# ORBITAL = {name: Orbital Freight, type: organization, aliases: [], summary: "A company."}
+cases:
+  - {id: IX-01, given: "Claude/Graph/Topics/T.md and copilot/p.md exist", then: "scan includes Daily.md and nothing under Claude/Graph/ or copilot/"}
+  - {id: IX-02, given: "Claude/Organizer.md and Claude/Librarian.md exist", then: "neither is scanned; the caretaker-note list equals exactly those two paths"}
+  - {id: IX-03, given: "manifest tracking Claude/Organizer.md (hash) and Claude/Librarian.md (failure)", then: "loading drops both"}
+  - {id: IX-04, given: "manifest file '{\"hashes\": {}}' or '{\"hashes\": null, \"failures\": null}'", then: "load yields empty maps for both keys; a run with retry_failures reports failed 0"}
+  - {id: IX-05, given: "extractor maps Daily.md -> [ORBITAL]", then: "first run processed > 0, entities_created 1, remaining 0; second run processes 0 and calls the extractor for nothing"}
+  - {id: IX-06, then: "after a full run, writing Claude/Inbox/new.md makes the next run extract only that path"}
+  - {id: IX-07, then: "force=true processes every scanned note"}
+  - {id: IX-08, then: "batch 1 -> processed 1, remaining = scanned - 1"}
+  - {id: IX-09, then: "failure is recorded in manifest.json failures and retried by the next run"}
+  - {id: IX-10, then: "run builds graph.db in the state dir; find 'orbital' succeeds"}
+  - {id: IX-11, when: "enigma-mcp index <vault> --rebuild-only", then: "stdout contains '\"rebuilt\": true'; cache contains entities already present in markdown"}
+  - {id: IX-12, then: "after 3 failing runs the note is skipped (not extracted) and counted in skipped=1; force overrides the skip; a later success removes the failure record"}
+  - {id: IX-13, given: "legacy manifest failure value as plain string 'old error'", then: "load converts to {error: 'old error', attempts: 1}"}
+  - {id: IX-14, then: "a run that processes nothing does not rebuild the cache (db already exists)"}
+  - {id: IX-15, given: "ENIGMA_STATE_DIR unset, HOME = temp", then: "state dirs for two vault roots differ, share the same parent ~/.enigma-mcp, and are stable; with only ENIGMA_VAULT_PATH set the no-argument state dir equals that vault's; with neither -> error mentioning ENIGMA_VAULT_PATH"}
+  - {id: IX-16, then: "a run computes note embeddings by default; precompute_embeddings=false computes none"}
+  - {id: IX-17, given: "story.md extracted with ORBITAL then edited so extraction is empty", then: "second run mentions_retracted 1; the mention line is gone from the entity note"}
+  - {id: IX-18, then: "retry_failures=true re-attempts a benched note (failed 0, record cleared); on a clean vault it processes nothing"}
+  - {id: IX-19, given: "PATH holds neither codex nor claude; ENIGMA_EXTRACTOR unset", when: "enigma-mcp index <vault> --batch 2", then: "exit 0; the counts show processed 0, failed 2, remaining 2; manifest failures hold both paths with error 'codex CLI not found on PATH' and attempts 1; graph.db is written"}
+  - {id: IX-20, then: "enigma-mcp index <vault> --backend bogus and enigma-mcp consolidate <vault> --backend bogus -> stderr 'error: ExtractorError: Unknown backend: bogus' + LF, exit 1 (not a usage error); ENIGMA_EXTRACTOR='' -> 'error: ExtractorError: Unknown backend: ' + LF, exit 1"}
+  - {id: IX-21, given: "PATH without codex on the first enigma-mcp index <vault>, then the fake codex first on PATH for a second run", then: "both runs exit 0; the first records a failure (attempts 1) per note of its batch; the second processes exactly those notes with failed 0, records their hashes, removes every failure record, and the graph finds 'orbital'"}
+  - {id: IX-22, given: "MV plus Bad.md holding the bytes ff fe 'broken' (not UTF-8) and Locked.md with mode 000; fake extractor", when: "run (and enigma-mcp index <vault>)", then: "the run finishes: exit 0 on the CLI; failed counts both notes; failures['Bad.md'] = {error: starting \"DecodeError: 'utf-8' codec can't decode byte 0xff in position 0\", attempts: 1} and Locked.md has an IoError record; every other note is processed and its hash saved; a second run retries both (attempts 2); after Bad.md is fixed and Locked.md made readable, the next run processes them and clears both records"}
+  - {id: IX-23, given: "a per-note error that is not an ExtractorError, injected from the extractor (e.g. IoError 'disk hiccup')", then: "recorded as failures[path].error 'IoError: disk hiccup', attempts 1; the run continues and the manifest is saved"}
+  - {id: IX-24, then: "run errors still stop the run: an unparseable manifest.json -> InvalidData before any extraction; a graph.db that cannot be loaded is rebuilt from the markdown and the run continues (processed counts every note)"}

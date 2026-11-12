@@ -1,0 +1,43 @@
+# Acceptance: graph (spec/05-graph.md). Fixture MV.
+# ORBITAL = {name: Orbital Freight, type: organization, aliases: [ORBF], summary: "A company."}
+# ROUTES  = {name: Trade Routes, type: domain, aliases: [], summary: "Logistics."}
+# REL     = {from: Orbital Freight, from_type: organization, rel: operates_in, to: Trade Routes, to_type: domain, evidence: "ships cargo"}
+cases:
+  # vault queries
+  - {id: GQ-01, given: "Claude/Sessions/2026-07-05 Q.md with project enigma, tags [infra]", then: "query_notes(project enigma) -> exactly that path; frontmatter.project == enigma"}
+  - {id: GQ-02, then: "query_notes(tags [GRID]) -> [Projects/Lighthouse Grid.md]"}
+  - {id: GQ-03, then: "plain query_notes lists Lighthouse Grid but not Daily.md (no frontmatter); limit 1 -> 1 row"}
+  - {id: GQ-04, then: "backlinks of Claude/Concepts/Postgres.md include notes with '[[postgres]]' and '[[Claude/Concepts/Postgres|the db]]'"}
+  - {id: GQ-05, then: "Daily.md has no backlinks; a note linking only to itself has none"}
+  - {id: GQ-06, given: "frontmatter created: 2026-07-05 (YAML date), tags [a, b], count: 3, done: true", then: "tags list, count 3 (int), done true (bool), created a string starting '2026-07-05'; whole result JSON-serialisable"}
+  - {id: GQ-07, then: "list_recent(2): newest mtime first; each row has 'modified'"}
+  # cache
+  - id: GC-01
+    given: apply(Projects/Lighthouse Grid.md, [ORBITAL, ROUTES], [REL]); write Claude/Inbox/interview.md and apply([ORBITAL]); rebuild
+    then:
+      - tables entities, edges, mentions exist
+      - find 'orbital' -> first {name Orbital Freight, type organization, mention_count 2}, relations include {rel operates_in, to Trade Routes}; find 'ORBF' (alias) non-empty
+      - find 'trade' type domain non-empty; type person -> []
+      - related_notes(interview.md, hops 1) includes Projects/Lighthouse Grid.md with a via mentioning Orbital Freight
+      - related_notes(hops 2) excludes the note itself and every Claude/Graph/ path; also when the path is given without .md
+      - stats -> entities.organization 1, entities.domain 1, edges 1, mentions 3
+      - rebuilding again over an existing db works
+      - note_entity_paths(interview.md) == [Claude/Graph/Organizations/Orbital Freight]; unknown -> []
+  - {id: GC-02, given: "'Ops' as domain (A.md, inbound operates_in from Globex) and 'Ops' as topic (B.md)", then: "each has mention_count 1; topic relations []"}
+  - id: GC-03
+    given: seed note mentions ORBITAL with relation to hub domain 'Everything'; Projects/Direct.md mentions ORBITAL; six 'Projects/Hubbed i.md' mention only the hub
+    then: related_notes(seed, hops 2)[0] == Projects/Direct.md with via containing 'Orbital Freight'; limit 3 -> 3 rows, Direct first; limit -1 -> invalid-argument error mentioning 'limit'
+  # graph store
+  - {id: GS-01, then: "entity path organization 'Orbital Freight' -> Claude/Graph/Organizations/Orbital Freight.md; person 'Bad:Name?' -> Claude/Graph/People/BadName.md"}
+  - {id: GS-02, then: "new entity note has 'entity: organization', '# Orbital Freight', the summary, '## Mentions', '## Relations' and alias ORBF in frontmatter"}
+  - {id: GS-03, then: "upsert existing with extra alias 'Orbital Inc' and different summary -> same path, alias added, summary unchanged"}
+  - {id: GS-04, given: "entity note with an unclosed frontmatter fence", then: "upsert with a new alias leaves the file byte-identical"}
+  - {id: GS-05, given: "'Orbital Freight' exists", when: "upsert 'Orbital: Freight' (same file name after sanitising)", then: "created false; 'Orbital: Freight' recorded as alias; first summary kept"}
+  - {id: GS-06, then: "find_entity_note by alias 'orbf' and by 'ORBITAL FREIGHT' -> the note; unknown -> none"}
+  - {id: GS-07, then: "add_mention returns true then false for the same note; one link '[[Projects/Lighthouse Grid|Lighthouse Grid]]'; evidence text present; same stem in different folders are two mentions"}
+  - {id: GS-08, then: "add_relation true then false; line '- operates_in [[Claude/Graph/Domains/Trade Routes|Trade Routes]]'"}
+  - {id: GS-09, then: "apply of full extraction -> {entities_created 2, entities_merged 0, mentions_added 2, relations_added 1}; second identical apply creates 0 and adds 0 mentions"}
+  - {id: GS-10, then: "relation endpoint not among entities still gets a stub entity note; entities_created counts it"}
+  - {id: GS-11, then: "remove_mention removes only the given note's line; second call false"}
+  - {id: GS-12, then: "find_entity_note follows merged_into to the canonical; a dead-end redirect returns the stub itself"}
+  - {id: GS-13, given: "retired entity with alias 'ORB Inc'", when: "upsert with alias 'Orbital Co' and summary 'Back again.'", then: "same path, created true, no 'retired' key, aliases {Orbital Co, ORB Inc}, body has 'Back again.' and '## Mentions'"}

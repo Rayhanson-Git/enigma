@@ -1,0 +1,7 @@
+# Acceptance: caretaker lock (spec/03-vault-rules.md §Locking)
+cases:
+  - {id: LK-01, then: "while one holder has the lock, a second acquisition fails immediately with LockBusy"}
+  - {id: LK-02, then: "after release the lock can be taken again"}
+  - {id: LK-03, then: "LockBusy is a vault error kind"}
+  - {id: LK-04, then: "librarian apply run while another caretaker holds the lock -> LockBusy, sweep never starts"}
+  - {id: LK-05, then: "librarian --dry-run runs while the lock is held"}

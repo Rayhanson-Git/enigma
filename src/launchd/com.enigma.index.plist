@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Enigma nightly graph index (no filing, no moves). Install only one of
+     com.enigma.index and com.enigma.librarian: the Librarian sweep already
+     indexes. Install with: enigma-mcp schedule install --job index VAULT
+     (or fill in {BIN}, {VAULT} and {HOME}, copy to
+     ~/Library/LaunchAgents/com.enigma.index.plist, then
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.enigma.index.plist).
+     Remove with: enigma-mcp schedule uninstall --job index -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.enigma.index</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{BIN}</string>
+    <string>index-nightly</string>
+    <string>{VAULT}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>{HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StandardOutPath</key><string>{HOME}/.enigma-mcp/index-nightly.log</string>
+  <key>StandardErrorPath</key><string>{HOME}/.enigma-mcp/index-nightly.log</string>
+</dict>
+</plist>

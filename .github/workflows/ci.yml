@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    env:
+      HF_HUB_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      # The tests run the real embedding model; fetch it before going offline.
+      - name: Fetch the embedding model
+        env:
+          HF_HUB_OFFLINE: "0"
+        run: |
+          python3 -m pip install --user --break-system-packages -U huggingface_hub
+          python3 -m huggingface_hub.commands.huggingface_cli download TaylorAI/bge-micro-v2
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - run: cargo build --release

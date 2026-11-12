@@ -1,0 +1,30 @@
+# Acceptance: vault access layer (spec/03-vault-rules.md). Fixture: mini vault (MV).
+cases:
+  - {id: VA-01, when: "open a vault at a path that does not exist", then: "error containing 'does not exist'"}
+  - {id: VA-02, when: "read Daily.md", then: "text contains 'Remember to check'"}
+  - {id: VA-03, when: "read Ghost.md", then: "error containing 'not found'"}
+  - {id: VA-04, when: "read ../outside.md", then: "error containing 'escapes'"}
+  - {id: VA-05, when: "write Claude/Inbox/note.md 'hello'", then: "read returns exactly 'hello'"}
+  - {id: VA-06, when: "write Projects/New.md without confirmation", then: "error containing 'outside Claude/'"}
+  - {id: VA-07, when: "write Projects/New.md with confirm_outside_claude=true", then: "succeeds"}
+  - {id: VA-08, when: "write the same Claude/ path twice without overwrite", then: "second fails with 'already exists' (a NoteExists kind, which is also a vault error)"}
+  - {id: VA-09, when: "write v1 then v2 with overwrite=true", then: "content v2"}
+  - {id: VA-10, when: "write Claude/Sessions/2026/deep.md", then: "parent folders are created"}
+  - {id: VA-11, when: "append '- one\n' then '- two\n' to Claude/Inbox/2026-07-05.md", then: "file is '- one\n- two\n'"}
+  - {id: VA-12, when: "append to Daily.md without confirmation", then: "'outside Claude/'"}
+  - id: VA-13
+    then: in_claude true for Claude/Index.md and Claude/Sessions/x.md; false for Daily.md and ClaudeFake/x.md; on case-insensitive platforms (Windows) also true for claude/Sessions/x.md and CLAUDE/Index.md
+  - {id: VA-14, then: "write to Claude/Sessions (a directory), write to '' (the root, confirmed), append to Claude/Inbox, read Claude/Sessions all fail with a message containing 'directory'"}
+  - {id: VA-15, given: "reading a note fails twice with a transient permission/lock error", then: "third attempt succeeds; result returned"}
+  - {id: VA-16, then: "after a create and an overwrite, no '*.tmp-write' file remains anywhere"}
+  - {id: VA-17, then: "write and append store LF exactly (no CRLF translation on any OS): bytes 'line one\nline two\nline three\n'"}
+  - {id: VA-18, given: "publishing (link or rename) fails twice with a lock error (POSIX: EACCES; Windows: access denied)", then: "third attempt succeeds (both create-only and overwrite paths)"}
+  - {id: VA-19, given: "publishing always fails with a lock error (POSIX: EACCES; Windows: access denied)", then: "the lock error surfaces as IoError after 5 attempts"}
+  - id: VA-20
+    given: filesystem without hard-link support; 16 concurrent create-only writers of the same path, each writing "writer i\nline two\n"
+    then: exactly one succeeds; the others get NoteExists; file bytes equal the winner's content; the no-hard-link condition is NOT retried; no temp files remain
+  - {id: VA-21, then: "a 240-byte file name component (237 'a' + '.md') can be created and overwritten (POSIX)"}
+  - {id: VA-22, given: "deleting the temp file after a successful publish fails", then: "the write still reports success"}
+  - {id: VA-23, given: "opening for append fails twice with a lock error", then: "third succeeds; content '- captured\n'"}
+  - {id: VA-24, given: "opening for append always fails", then: "lock error surfaces"}
+  - {id: VA-25, given: "the append write fails after writing half the bytes", then: "error surfaces, no retry; file contains exactly the first half ('- cap')"}

@@ -1,0 +1,43 @@
+# Acceptance: graph cleanup (spec/12-cleanup.md). NOW = 2026-07-13 12:00. Entity helper: organization, no aliases, summary "S.".
+cases:
+  - id: CL-01 deleted notes
+    given: tracked Projects/Kept.md (present), hashes Projects/Gone.md, failures Projects/Benched.md (both absent)
+    then: deleted_notes == ["Projects/Benched.md", "Projects/Gone.md"]
+  - id: CL-02 retract one deleted note
+    given: Projects/Doomed.md indexed with entity Acme, then the file deleted
+    then: 'result {retracted_notes: 1, removed_mentions: 1, remaining: 0}; "[[Projects/Doomed|" gone from Acme.md; manifest no longer tracks it'
+  - id: CL-03 cap
+    then: 3 deleted notes, limit 2 -> retracted 2, remaining 1
+  - id: CL-04 no cache db
+    then: retraction falls back to scanning graph notes; removed_mentions 1
+  - id: CL-05 entity note deleted by hand
+    then: '{retracted_notes: 1, removed_mentions: 0, remaining: 0}; manifest entry pruned anyway'
+  - id: CL-06 tombstone
+    given: Acme with alias "ACME Inc", summary "Maker of anvils."
+    when: retire with reason "orphaned — no mentions or relations"
+    then: frontmatter retired == "2026-07-13 12:00"; aliases kept; body keeps the summary and contains "Retired:"
+  - id: CL-07 retired entities excluded
+    then: consolidation gather skips retired; cache rebuild skips retired (find_entity "Acme" -> [])
+  - id: CL-08 redirect resolution
+    then: Old -> Mid -> Canonical resolves to Canonical; A<->B cycle -> none; missing -> none; 6-hop chain -> none while a 2-hop suffix resolves
+  - id: CL-09 relation repair
+    then: 'relation to stub Dup (merged into Canonical) rewritten to "- uses [[Claude/Graph/Organizations/Canonical|Canonical]]" -> {fixed: 1, removed: 0}; relation to missing Ghost removed -> {fixed: 0, removed: 1}; if Canonical relation already exists the Dup line is removed -> {fixed: 0, removed: 1} and exactly one Canonical link; limit 1 with two dangling -> fixed+removed == 1'
+  - id: CL-10 frozen sources
+    then: 'dangling relation lines inside stubs (merged_into) and tombstones (retired) are not edited -> {fixed: 0, removed: 0}'
+  - id: CL-11 stub flattening
+    then: 'Old -> Mid -> Canonical: Old rewritten to merged_into Canonical and body link "[[Canonical]]" -> {flattened: 1, retired_stubs: 0}; stub to Ghost -> retired with stamp -> {flattened: 0, retired_stubs: 1}; stub pointing at live entity untouched -> {0, 0}'
+  - id: CL-12 orphans
+    given: Lonely (no support), Mentioned (one mention), Source (mention + relation to Endpoint), Endpoint (relation-only target)
+    then: orphan paths == ["Claude/Graph/Organizations/Lonely"]; stubs and tombstones are never orphans
+  - id: CL-13 proposal list self-heals and caps
+    given: existing pending entry that is no longer an orphan; orphans o0,o1,o2; limit 2
+    then: pending paths == [o0, o1] and the block is updated in place
+  - id: CL-14 apply retirements
+    then: '{retired: ["Claude/Graph/Organizations/Lonely"]}, tombstone stamped, cache no longer finds Lonely; with paths=[LonelyA] only LonelyA retired'
+  - id: CL-15 checked-hash pruning
+    then: '{live: h1, gone: h2} with live set {live} -> 1 dropped; empty block -> 0'
+  - id: CL-16 mass deletion hold
+    given: 20 tracked notes all absent
+    then: suspect_mass_deletion true, retracted 0, manifest untouched; force=true retracts all 20
+  - id: CL-17 dry repair counts
+    then: 'dry relation repair -> {fixed: 0, removed: 1}; dry stub flatten -> {flattened: 1, retired_stubs: 0}; graph files byte-identical'

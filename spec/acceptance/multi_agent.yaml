@@ -1,0 +1,14 @@
+# Acceptance: concurrent agents sharing one vault (spec/03-vault-rules.md §Concurrency)
+cases:
+  - {id: MA-01, when: "16 concurrent create-only writes of one path", then: "exactly one winner; content starts 'writer '; no temp files"}
+  - {id: MA-02, then: "NoteExists is a vault error with 'already exists'"}
+  - {id: MA-03, when: "8 concurrent log_session with the same title", then: "8 distinct paths; each body ('body i') present exactly once"}
+  - {id: MA-04, given: "ENIGMA_AGENT_NAME=scout", then: "session note contains 'agent: scout'; unset -> 'agent: claude'"}
+  - {id: MA-05, then: "concept extended by ENIGMA_AGENT_NAME=researcher has '(researcher)' in its update heading and keeps both texts"}
+  - {id: MA-06, when: "8 concurrent upsert_concept of one name", then: "one path; every 'from i' text present"}
+  - {id: MA-07, given: "create collides but case-insensitive lookup cannot see the file (e.g. Unicode normalisation)", then: "the existing note is extended, never overwritten; path 'Claude/Concepts/Idea.md'"}
+  - {id: MA-08, when: "16 agents x 25 concurrent appends", then: "every line present exactly once"}
+  - {id: MA-09, when: "8 concurrent first add_task", then: "file starts with the seed exactly once; all 8 task lines present"}
+  - {id: MA-10, given: "sheet 'things' (key name)", then: "rows created with ENIGMA_AGENT_NAME=scout carry 'agent: scout'; explicit agent 'cowork' wins"}
+  - {id: MA-11, when: "8 concurrent upserts of the same key", then: "1 created, 7 updated; folder holds only Same.md and _schema.md"}
+  - {id: MA-12, given: "Same.md exists for a different key and the filename renders to 'Same'", then: "new row is 'Things/Same 2.md'; other row untouched"}

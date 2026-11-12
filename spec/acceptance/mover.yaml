@@ -1,0 +1,19 @@
+# Acceptance: link-safe mover (spec/09-organizer-mover.md)
+# Fixture: root "Signal.md"; "02 - Orbit/Research.md" = "See [[Signal]] and [[Signal|the signal note]] and [[Signal#Details]].\n";
+# root "Signal 2.md"; "02 - Orbit/Mentions2.md" = "See [[Signal 2]] too.\n"; "Claude/Graph/Topics/Signal Topic.md" = "## Mentions\n\n- [[Signal|Signal]] — evidence\n"
+cases:
+  - id: MV-01 rewrite all link forms
+    when: move Signal.md -> 02 - Orbit/Signal.md
+    then: record from/to set; old file gone, new exists; Research contains "[[02 - Orbit/Signal]]", "[[02 - Orbit/Signal|the signal note]]", "[[02 - Orbit/Signal#Details]]"; graph note contains "[[02 - Orbit/Signal|Signal]]"; rewrites list both files
+  - id: MV-02 prefix collision untouched
+    then: '"[[Signal 2]]" unchanged'
+  - id: MV-03 manifest hash and failure record move with the note
+  - id: MV-04 duplicate stem detection
+    then: Clone.md at root and in 02 - Orbit -> true; Signal.md -> false
+  - id: MV-05 reverse rewrites
+    then: restores "[[Signal]]"
+  - id: MV-06 failed file move leaves everything untouched
+  - id: MV-07 failed second rewrite rolls back links and file (byte snapshot equal)
+  - id: MV-08 CRLF and undecodable bytes preserved (only the link bytes change)
+  - id: MV-09 self link travels with the note ("[[Signal#Top]]" inside Signal.md becomes "[[02 - Orbit/Signal#Top]]" in the moved file)
+  - id: MV-10 protected rewrite refuses before touching anything; error lists ["Claude/Graph/Topics/Signal Topic.md"]

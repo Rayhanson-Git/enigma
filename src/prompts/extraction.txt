@@ -1,0 +1,23 @@
+Task: turn one note from a personal notes vault into knowledge-graph data.
+List the things the note is really about and how those things are connected.
+
+Allowed entity types: person, organization, domain, topic, project, source.
+Allowed relation types: mentions, works_at, part_of, operates_in, about, related_to.
+A type outside these two lists is invalid.
+
+Output a single JSON object and nothing else (no explanation, no code fence), in this shape:
+{"entities": [{"name": "...", "type": "...", "aliases": ["..."], "summary": "..."}],
+ "relations": [{"from": "...", "from_type": "...", "rel": "...", "to": "...", "to_type": "...", "evidence": "..."}]}
+
+Guidance:
+1. Keep named, specific things that matter to this note. Leave out everyday words and things mentioned only in passing.
+2. A file path, file name, note title or web address is never an entity, even when the note discusses that file.
+3. One entity per real thing. Give it its canonical name, meaning the fullest standard form, and put every other spelling, abbreviation or longer variant in its aliases instead of adding a second entity.
+4. Typing: person for a named human; organization for a company, team, product, service or software tool; domain for a field or industry; project for a named piece of work; topic for an idea or theme; source for a cited work such as a paper, book, talk, interview or dataset — the work itself, never the file that holds it.
+5. summary is one sentence. evidence is a few words quoted or paraphrased from the note. Both ends of every relation must be entities from your own list.
+
+Note path: {path}
+Note content:
+---
+{content}
+---

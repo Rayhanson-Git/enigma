@@ -1,0 +1,9 @@
+# Acceptance: tasks (spec/03-vault-rules.md §Tasks.md). Fixture MV.
+cases:
+  - {id: TK-01, when: "add_task('review relay logs')", then: "returns 'Claude/Tasks.md'; file starts with frontmatter, has '# Tasks', a fenced 'tasks' query block and '- [ ] review relay logs'"}
+  - {id: TK-02, when: "add_task('deploy VM', due '2026-07-10')", then: "line '- [ ] deploy VM 📅 2026-07-10'"}
+  - {id: TK-03, when: "due 'tomorrow'", then: "invalid-argument error"}
+  - {id: TK-04, then: "two adds keep both lines"}
+  - {id: TK-05, given: "Claude/Inbox/todo.md '- [ ] inbox task\n- [x] done task\n'", then: "list_tasks contains 'open one' and 'inbox task', not 'done task'; include_done=true includes done items with done=true"}
+  - {id: TK-06, then: "list_tasks(folder 'Claude') returns only Claude/ paths"}
+  - {id: TK-07, when: "add_task('line one\nline two\t end')", then: "single line '- [ ] line one line two end'; no stray non-task lines appear in the file"}

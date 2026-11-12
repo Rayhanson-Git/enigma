@@ -1,0 +1,43 @@
+[package]
+name = "enigma-mcp"
+version = "1.1.0"
+edition = "2024"
+authors = ["Harvey Rayhanson (Rayhanson-Git)"]
+license = "MIT"
+description = "Enigma MCP: memory server for an Obsidian vault"
+repository = "https://github.com/Rayhanson-Git/Enigma-MCP"
+
+[dependencies]
+candle-core = "0.11.1"
+candle-nn = "0.11.1"
+candle-transformers = "0.11.1"
+caseless = "0.2.2"
+chrono = "0.4.45"
+clap = { version = "4.6.7", features = ["derive"] }
+fastrand = "2.5.0"
+indexmap = "2.14.2"
+libc = "0.2"
+regex = "1.13.1"
+rmcp = { version = "3.9.0", default-features = false, features = ["server", "transport-io"] }
+rusqlite = { version = "0.42.0", features = ["bundled"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+sha2 = "0.11.1"
+tokenizers = { version = "0.23.2", default-features = false, features = ["fancy-regex"] }
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "io-std"] }
+unicode-general-category = "1.1.0"
+ureq = "3"
+walkdir = "2.5.0"
+yaml-rust2 = "0.13.0"
+
+[features]
+# Test-only failure hooks (03 §5.1 cases); never in release builds.
+fault-injection = []
+
+[dev-dependencies]
+enigma-mcp = { path = ".", features = ["fault-injection"] }
+tempfile = "3.27.0"
+
+# The embedding model is unusably slow unoptimised; tests run it too.
+[profile.dev.package."*"]
+opt-level = 3

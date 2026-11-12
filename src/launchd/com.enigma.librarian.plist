@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Enigma Librarian sweep. Install only one of com.enigma.librarian and
+     com.enigma.index: this sweep already indexes. A never-swept vault refuses
+     a scheduled run: first run "enigma-mcp librarian <vault> --dry-run" by
+     hand, review the report, then run once with --confirm-first-run.
+     Install with: enigma-mcp schedule install --job librarian VAULT
+     (or fill in {BIN}, {VAULT} and {HOME}, copy to
+     ~/Library/LaunchAgents/com.enigma.librarian.plist, then
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.enigma.librarian.plist).
+     Remove with: enigma-mcp schedule uninstall --job librarian -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.enigma.librarian</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{BIN}</string>
+    <string>librarian</string>
+    <string>{VAULT}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ENIGMA_EXTRACTOR</key><string>claude</string>
+    <!-- unattended extraction reads clipped web pages: deny the CLI its tools -->
+    <key>ENIGMA_EXTRACTOR_NO_TOOLS</key><string>1</string>
+    <key>PATH</key><string>{HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>{HOME}/.enigma-mcp/librarian-task.log</string>
+  <key>StandardErrorPath</key><string>{HOME}/.enigma-mcp/librarian-task.log</string>
+</dict>
+</plist>

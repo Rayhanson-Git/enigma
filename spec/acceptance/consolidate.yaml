@@ -1,0 +1,15 @@
+# Acceptance: consolidation (spec/07-consolidate.md). Fake embedder [len(text), 1.0]; fake backend returns a fixed reply and records prompts.
+# Seed: A.md mentions "Cedar Cloud" (organization, summary "Cloud VM."); B.md mentions "Cedar Cloud deploy" (organization, "Deploying it.")
+# with relation Cedar Cloud deploy -related_to-> "DEPLOY guide" (source).  MERGE = {merges: [{organization, canonical Cedar Cloud, duplicates [Cedar Cloud deploy]}]}
+cases:
+  - {id: CO-01, then: "gather lists (organization, Cedar Cloud) and (organization, Cedar Cloud deploy) with summaries 'Cloud VM.' and 'Deploying it.'"}
+  - {id: CO-02, given: "reply also proposes canonical 'Nonexistent' and a wrong-type (person) merge", then: "only the valid merge survives; skipped 0"}
+  - {id: CO-03, then: "dry run: proposed non-empty, applied false, duplicate note unchanged, skipped_batches 0"}
+  - {id: CO-04, then: "apply: applied true, merged_entities 1; canonical note gains the '[[B|' mention, a 'related_to [[' relation and alias 'Cedar Cloud deploy'; duplicate becomes a stub with 'merged_into:' and 'Merged into [[Cedar Cloud]]'"}
+  - {id: CO-05, given: "canonical already lists 'Cedar Cloud deploy' as an alias", then: "duplicate is still found by file name and stubbed"}
+  - {id: CO-06, then: "after apply, a rebuilt cache returns only 'Cedar Cloud' for 'cedar' with mention_count 2"}
+  - {id: CO-07, then: "summary of '# Foo\n\nLine one.\n\n---\n\nLine two.\n\n## Mentions\n\n## Relations\n' (no frontmatter) == 'Line one.\n\n---\n\nLine two.'; a note with only heading and sections -> ''"}
+  - {id: CO-08, then: "one failing batch (backend error) is skipped (skipped 1) while the other batch's merge is kept"}
+  - {id: CO-09, then: "identical merges from two batches are reported once"}
+  - {id: CO-10, then: "a retired duplicate resolves to none (never merged)"}
+  - {id: CO-11, then: "the adjudication prompt for a batch equals the normative text of 07 §3.1 byte for byte with {listing} replaced by the listing lines joined with LF (no trailing LF)"}

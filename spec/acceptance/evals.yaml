@@ -1,0 +1,22 @@
+# Acceptance: retrieval evals (spec/13-evals.md). Keyword embedder vocabulary [alpha, beta, gamma].
+cases:
+  - {id: EV-01, then: "first_relevant_rank([a,b,c],{b}) == 2; absent -> none; empty hits -> none"}
+  - {id: EV-02, then: "recall_at_k([a,b,c,d],{a,d},2) == 0.5; k 4 -> 1.0; empty expect -> 0.0"}
+  - {id: EV-03, then: "success_at_k([a,b],{b},2) true; k 1 false"}
+  - id: EV-04 golden YAML
+    given: "list: q1 (query 'alpha beta', expect [Notes/A.md], accept [Notes/B.md], tags [x], folder Notes, note demo), q2 (query gamma, expect [Notes/B.md])"
+    then: ids [q1, q2]; q1.accept [Notes/B.md], tags [x], folder Notes; q2.accept [], tags none
+  - {id: EV-05, then: "the same list inside a fenced yaml block of a .md file loads; a .md without such a block -> config error"}
+  - {id: EV-06, then: "duplicate id, empty expect, missing file -> config error"}
+  - {id: EV-07, then: "scalar expect/accept/tags become one-item lists; a mapping for expect -> error naming 'expect'; empty id or blank query -> error containing 'non-empty'"}
+  - {id: EV-08, then: "strict path validation names the missing path (GONE.md); lenient returns {q1: [Notes/GONE.md]}; absolute paths and '..' paths are reported missing even if the file exists outside"}
+  - {id: EV-09, then: "the bundled fixture golden set (spec/fixtures/vault-golden.yaml) loads with exactly 17 queries and every path exists in spec/fixtures/vault"}
+  - {id: EV-10, given: "Notes/A.md 'alpha alpha content', Notes/B.md 'beta content'", then: "query alpha expect A -> first_rank 1, success@5 1.0, recall@10 1.0, MRR 1.0, skipped 0; query 'zzz-nowhere' expect B -> first_rank none, MRR 0, success@10 0"}
+  - {id: EV-11, then: "strict run with a stale expect path -> config error; lenient run skips the fully stale query (skipped 1, result.skipped true) and aggregates only the scored query"}
+  - {id: EV-12, then: "accept-only hit gives a rank but recall@10 0.0"}
+  - {id: EV-13, then: "a missing state dir is created by the run"}
+  - {id: EV-14, then: "table output contains 'MRR', 'success@10' and the query id; JSON form has mrr 1.0 and queries[0].id q1 and is serialisable; history append writes a JSONL line with mrr and vault"}
+  - {id: EV-15, then: "CLI --vault V --golden G --json exits 0, prints JSON with mrr 1.0, writes eval_history.jsonl in the state dir; a failing history write prints a warning containing 'history' to stderr and still exits 0"}
+  - {id: EV-16, then: "missing golden file or missing vault -> exit 2 with 'error:' on stderr; --live without ENIGMA_VAULT_PATH -> exit 2"}
+  - {id: EV-17, then: "init-live creates Claude/Evals.md whose first golden id is example-constitution; a second call reports not created and keeps user edits; CLI --init-live with ENIGMA_VAULT_PATH prints 'created'"}
+  - {id: EV-18, given: "ENIGMA_RUN_EVALS non-empty and the real model", then: "the paraphrase query para-query (puppy vaccination clinic -> Inbox/Biscuit vet reminder.md) ranks its note within the top 10 of the fixture run; only with ENIGMA_RUN_EVALS=1 also skipped 0, success@10 >= 0.80, MRR >= 0.50; unset or empty runs neither check"}

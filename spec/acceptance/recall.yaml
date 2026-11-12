@@ -1,0 +1,47 @@
+# Acceptance: recall bundles (spec/11-recall.md)
+cases:
+  - id: RC-01 digest keys
+    then: digest keys are exactly {mode, generated, since, librarian, recent_notes, inbox_captures, tasks, proposals, new_entities}; mode=digest; every section has status "ok"
+  - id: RC-02 fresh inbox capture listed
+    given: Claude/Inbox/2026-07-10.md just written
+    then: inbox_captures.notes paths include it
+  - id: RC-03 since filter
+    given: inbox note with mtime 2020-01-02
+    when: since="2026-01-01"
+    then: bundle.since == "2026-01-01"; the old note is absent
+  - id: RC-04 bad since
+    then: since="last tuesday" -> error containing "YYYY-MM-DD"
+  - id: RC-05 open vs recently done
+    given: Claude/Tasks.md = "# Tasks\n\n- [ ] open item\n- [x] finished item\n" (just written)
+    then: tasks.open texts == ["open item"]; tasks.done_recently texts == ["finished item"]
+  - id: RC-06 section degradation
+    given: librarian status raises a runtime failure
+    then: librarian.status == "error", librarian.error names the failure kind; recent_notes still ok
+  - id: RC-07 proposals default
+    then: no sweep -> proposals.pending 0, detail_note "Claude/Organizer.md"; after state.health.pending_proposals=3 -> 3
+  - id: RC-08 resume by project substring newest first
+    given: sessions "2026-07-01 Graph work" (project enigma-mcp, created 2026-07-01 10:00), "2026-07-09 Evals" (enigma-mcp, 2026-07-09 10:00), "2026-07-05 Other" (project lighthouse)
+    when: resume("enigma")
+    then: mode=resume; project=enigma; sessions paths == [".../2026-07-09 Evals.md", ".../2026-07-01 Graph work.md"]; first excerpt contains its body and no "---"
+  - id: RC-09 resume limit
+    then: 4 matching sessions, limit=2 -> 2
+  - id: RC-10 decisions and tasks filtered case-insensitively
+    given: Decisions lines "- 2026-07-08 — hybrid search ships in enigma ([[x]])" and "- 2026-07-09 — lighthouse retired"; tasks "- [ ] tune enigma eval gate", "- [ ] water plants", "- [x] enigma done thing"
+    when: resume("Enigma")
+    then: decisions.lines == the first line only; tasks texts == ["tune enigma eval gate"]
+  - id: RC-11 missing Decisions.md
+    then: decisions.status ok, lines []
+  - id: RC-12 no graph cache
+    then: entities.status ok, entities []
+  - id: RC-13 entities from cache
+    given: Claude/Graph/Projects/Enigma.md with entity project, aliases [enigma-mcp], H1 "Enigma", summary "The mind database project."; cache rebuilt
+    then: 'entities == [{name: Enigma, type: project, path: Claude/Graph/Projects/Enigma.md, summary: The mind database project.}]'
+  - id: RC-14 context block
+    then: after log_session("Fixed the flux capacitor", ..., project enigma-mcp) the block for enigma-mcp contains "flux capacitor" and is <= 2000 chars; a 5000-char session with budget 500 gives <= 500 chars
+  - id: RC-15 context CLI never fails
+    when: enigma-mcp recall --vault /nonexistent --context
+    then: exit 0, empty stdout
+  - id: RC-16 session created sorts as text
+    given: 'sessions "A" (project enigma, created 2026-07-01 10:00), "B" (enigma, created 2026-07-09 10:00), "C" (enigma, created "July 1")'
+    when: resume("enigma")
+    then: 'sessions paths == [".../C.md", ".../B.md", ".../A.md"] (created compared as text, descending: "J" > "2")'

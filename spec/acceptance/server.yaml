@@ -1,0 +1,27 @@
+# Acceptance: MCP server surface (spec/02-tools.md, spec/01-config.md). Fixture MV; ENIGMA_VAULT_PATH = fixture; ENIGMA_STATE_DIR = temp.
+cases:
+  - id: SV-01 full profile tool list
+    then: exactly {search_brain, read_note, log_session, capture, upsert_concept, write_note, add_task, list_tasks, query_notes, get_backlinks, list_recent, index_brain, find_entity, related_notes, graph_stats, consolidate_graph, onboard, context_bundle, organize_vault, undo_move, librarian_status, recall_bundle, sheet_upsert, sheet_query, sheet_schema}
+  - id: SV-02 read-only profile (ENIGMA_READONLY=1 at start)
+    then: exactly {search_brain, read_note, list_tasks, query_notes, get_backlinks, list_recent, find_entity, related_notes, graph_stats, onboard, context_bundle, librarian_status, recall_bundle, sheet_query, sheet_schema}
+  - id: SV-03 ENIGMA_TOOL_PROFILE is ignored
+    then: "with ENIGMA_TOOL_PROFILE=restricted, =weird or =full the server starts normally and lists the full 25 tools; with ENIGMA_TOOL_PROFILE=restricted and ENIGMA_READONLY=1 it lists exactly the SV-02 set; there is no restricted profile and no start-up error for any value"
+  - {id: SV-04, given: "ENIGMA_VAULT_PATH unset", then: "any vault tool fails with a message containing 'ENIGMA_VAULT_PATH'"}
+  - {id: SV-05, then: "search_brain('ingestion pipeline')[0] == {path: 'Projects/Lighthouse Grid.md', excerpt: 'Grid outage ingestion pipeline with a queue-free architecture.'}; search_brain('e', limit 1) has 1 item; query and limit are passed through to hybrid search unchanged"}
+  - {id: SV-06, then: "read_note('Daily.md') contains 'Remember to check'; log_session/capture/upsert_concept round-trip through read_note"}
+  - {id: SV-07, then: "write_note('Projects/Injected.md') -> error 'outside Claude/' and the MCP client receives an error result whose text contains 'outside Claude/' verbatim; with confirm_outside_claude=true it writes"}
+  - {id: SV-08, then: "add_task('torture the tests', due '2026-07-09') then list_tasks contains a text starting with it; query_notes(tags [grid]) contains Lighthouse Grid; capture('see [[Postgres]] note') makes get_backlinks(Claude/Concepts/Postgres.md) include an Inbox path; list_recent(3) non-empty"}
+  - {id: SV-09, given: "fake extractor returns ORBITAL for paths containing 'Lighthouse'", then: "index_brain -> processed > 0, entities_created 1; find_entity('orbital')[0].type organization; related_notes returns a list; graph_stats.entities.organization 1"}
+  - {id: SV-10, then: "find_entity without a cache -> error mentioning 'index_brain'"}
+  - {id: SV-11, then: "consolidate_graph() with a backend replying {merges: []} -> applied false, proposed []"}
+  - {id: SV-12, then: "server instructions mention 'Claude/', 'search_brain' and the quarantine / 'outside Claude/'"}
+  - {id: SV-13, then: "onboard with Claude/README.md and CLAUDE.md present returns them in constitution / vault_guide, a tools list containing search_brain, graph 'not built yet — call index_brain'; without the files both fields contain 'not installed'"}
+  - {id: SV-14, then: "context_bundle('ingestion pipeline') after indexing: hits[0].path Lighthouse Grid; entities include Orbital Freight; related_notes is a list. Without a cache: hits non-empty, entities [], related_notes []"}
+  - {id: SV-15, given: "'02 - Orbit/Orbits.md' 'orbit orbits', root 'Loose.md' 'orbit loose note'; embedder [1,0] if 'orbit' else [0,1]", then: "organize_vault() dry run reports a move of Loose.md and moves nothing"}
+  - {id: SV-16, then: "undo_move('02 - Orbit/Nope.md') -> 'No undoable move'"}
+  - {id: SV-17, then: "librarian_status before any sweep == {status: 'no sweep yet'}; after a saved state its last_sweep is returned"}
+  - {id: SV-18, then: "recall_bundle('digest').mode == digest; 'resume' without project -> 'requires project'; 'weekly' -> message mentioning 'digest'"}
+  - {id: SV-19, then: "the embedding model is loaded before the server starts serving (warm start precedes run)"}
+  - {id: SV-20, given: "sheet 'things' (name string required, when date, status enum [New]); body 'File one note per thing.'", then: "sheet_upsert(things, {name First, status New}, agent cowork) created; sheet_query(things, {when: {missing: true}})[0].name First; sheet_schema() has 'things'; row text has '(agent: cowork)' and '## Log'; the sheet_upsert input schema has an 'agent' property"}
+  - {id: SV-22, given: "the SV-15 vault", then: "organize_vault(apply true) with ENIGMA_MAX_MOVES unset or 'x' moves nothing and skips Loose.md with 'move cap reached'; with ENIGMA_MAX_MOVES=1 it moves Loose.md into '02 - Orbit'"}
+  - {id: SV-21, given: "ENIGMA_NO_TOOL_APPLY=1", then: "organize_vault(apply true), consolidate_graph(apply true), index_brain(force true) each fail with a message containing 'ENIGMA_NO_TOOL_APPLY'; consolidate_graph() dry run still works"}

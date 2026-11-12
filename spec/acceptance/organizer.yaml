@@ -1,0 +1,65 @@
+# Acceptance: organizer (spec/09-organizer-mover.md)
+# Fixture: dirs .obsidian, .smart-env, .trash, "00 - Maps of Content", Claude/Inbox, "02 - Orbit", "05 - Kitchen".
+# 02 - Orbit: Probe Ops.md "orbit telemetry anomaly research", CubeSat.md "orbit conference cubesat", Signals.md "orbit lstm telemetry"
+# 05 - Kitchen: Levain.md "recipe starter flour", Pho.md "recipe broth noodles"
+# 00 - Maps of Content/Home.md, Claude/Inbox/capture.md, root "Loose Orbit Note.md" "orbit transfer telemetry note",
+# root Pinned.md with "organize: false". Cluster embedder: text containing "orbit" only -> [1,0]; "recipe" only -> [0,1]; both/neither -> [0.7,0.7].
+cases:
+  - id: OR-01 constants
+    then: VOTE_K 10, VOTE_THRESHOLD 0.7
+  - id: OR-02 taxonomy
+    then: '["02 - Orbit", "05 - Kitchen"]; a new "07 - Money" dir appears; no dot dirs; sheet folders excluded'
+  - id: OR-03 organized notes
+    then: include "02 - Orbit/Probe Ops.md", "05 - Kitchen/Pho.md"; none under Claude/ or 00 - Maps of Content
+  - id: OR-04 candidates
+    then: include "Loose Orbit Note.md" and "02 - Orbit/Probe Ops.md"; exclude Pinned.md and Claude/Inbox/capture.md; root CLAUDE.md / AGENTS.md never; ".claude/commands/day.md" never; sheet rows never
+  - id: OR-05 classify majority
+    given: orbit vectors [1,0] x3, kitchen [0,1] x2, candidate [0.9,0.1]
+    then: folder "02 - Orbit", share >= 0.7, neighbors include "02 - Orbit/Probe Ops.md"
+  - id: OR-06 split vote
+    then: candidate [0.7,0.7] -> share < 0.7
+  - id: OR-07 no self vote
+    then: classifying a labeled note never lists itself as neighbor
+  - id: OR-08 nothing to classify
+    then: candidate without vector -> folder none, share 0.0; no labeled notes -> folder none
+  - id: OR-09 journal and log
+    when: move "Loose Orbit Note.md" to "02 - Orbit/Loose Orbit Note.md" and record share 0.85
+    then: last journal line has from/to and share 0.85; Claude/Organizer.md mentions "Loose Orbit Note" and "0.85"
+  - id: OR-10 undo
+    then: undo of "02 - Orbit/Loose Orbit Note.md" -> restored "Loose Orbit Note.md"; file back at root and gone from the folder; second undo -> "No undoable move"; unknown path -> "No undoable move"; a failure record under the new path moves back to the old path
+  - id: OR-11 dry run
+    then: reports move Loose Orbit Note.md -> 02 - Orbit; nothing moved; no journal file
+  - id: OR-12 apply
+    then: file moved, journal exists, cache_rebuilt true; correctly filed notes never in moved
+  - id: OR-13 ambiguous becomes proposal
+    given: root "Fusion Orbit Kitchen.md" with both words
+    then: proposal for it; file stays; Organizer.md contains the suggestions block with an unticked line for it
+  - id: OR-14 duplicate stem
+    given: '"05 - Kitchen/Loose Orbit Note.md" also exists'
+    then: proposal for root note; reason contains "duplicate"; not moved
+  - id: OR-15 move cap
+    given: a second confident root note
+    then: max_moves 1 -> 1 moved, 1 skipped with reason "move cap reached" (file stays); max_moves 0 -> no moves
+  - id: OR-16 sheet-row links block a move
+    given: sheet folder Records with Row.md linking [[Loose Orbit Note]]
+    then: 'dry and apply: no move; proposal reason starts "linked from sheet rows"; Row.md byte-identical'
+  # ---------------------------------------------------------------- suggestions block (09 §3.1)
+  # FUSION = root "Fusion Orbit Kitchen.md" (both words: a low-confidence proposal for 02 - Orbit on every applying run).
+  - id: OR-17 block format
+    given: FUSION; applying run at 2026-07-05 12:00
+    then: 'Organizer.md has exactly one block, placed before "## Log", reading "<!-- enigma:suggestions:start -->\n## Suggestions\n\nTick a box to dismiss a suggestion; it will not be proposed again. Enigma never moves a note because of this list.\n\n- [ ] `Fusion Orbit Kitchen.md` → **02 - Orbit** (low confidence) — proposed 2026-07-05\n<!-- enigma:suggestions:end -->\n"; no "### Proposals" section; organizer_suggestions.json lists it under open'
+  - id: OR-18 unchanged proposals leave the note byte-identical
+    then: a second applying run a day later with the same proposals leaves Organizer.md and organizer_suggestions.json byte-identical (the proposed date stays 2026-07-05)
+  - id: OR-19 new and dropped proposals
+    then: 'a second proposal (root "Fusion Two Orbit Kitchen.md") is appended below the first with its own date; when FUSION is deleted its line goes and the log gains "- <stamp> — suggestion dropped (note moved or deleted): `Fusion Orbit Kitchen.md` → **02 - Orbit**"; when it stops being a proposal (organize: false) the history says "dropped (no longer applies)"'
+  - id: OR-20 a tick acknowledges
+    then: 'ticking the box ("- [x]") and running again removes the line, logs "suggestion acknowledged", stores the pair under acknowledged with the stamp, reports the note in skipped with reason "suggestion acknowledged", never proposes it again on later runs (also in dry runs), and moves nothing'
+  - id: OR-21 15-day expiry
+    then: 'with the clock at 2026-07-19 (14 days) the line stays; at 2026-07-20 (15 days) it is dropped with history "suggestion expired after 15 days" and not re-added in that run; the next run (2026-07-21) proposes it again with "proposed 2026-07-21"'
+  - id: OR-22 text outside the block is preserved
+    then: text added above the block, between the block and "## Log", and after the log lines is still there byte for byte after further applying runs; text typed inside the block is regenerated
+  - id: OR-23 no proposals, no block
+    then: an applying run with no proposals and no existing block writes no block (Organizer.md is not created by the suggestions logic alone); once a block exists and its last item goes, the block reads "_No open suggestions._"
+  - id: OR-24 dry runs write nothing
+    then: a dry run with proposals leaves Organizer.md and the suggestions state untouched (absent stays absent)
+

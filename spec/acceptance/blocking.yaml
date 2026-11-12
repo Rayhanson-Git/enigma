@@ -1,0 +1,18 @@
+# Acceptance: candidate blocking and slicing (spec/07-consolidate.md §Blocking). Fake embedder [len(text), 1.0].
+cases:
+  - {id: BL-01, then: "identity text of {name Cedar Cloud, aliases [CC], summary 'Cloud VM.'} == 'Cedar Cloud\nCC\nCloud VM.'"}
+  - {id: BL-02, then: "identity hash changes with summary; path is not part of identity"}
+  - {id: BL-03, then: "vectors returned for each entity path; a second call embeds nothing; changing one summary re-embeds only 'Acme\n\nDIFFERENT'"}
+  - {id: BL-04, then: "pairs only within the same type: p1/p2 persons pair, identical-direction org o1 does not"}
+  - {id: BL-05, then: "cosine 0 pair below 0.85 -> no pairs; top-k 2 of 6 near-parallel -> 2 pairs"}
+  - {id: BL-06, then: "pairs (a,b),(b,c) -> one cluster [a,b,c]; star of 11 with max 10 -> sizes [5,6], nobody lost; oversize components never strand members"}
+  - {id: BL-07, then: "clusters map back to entity records; singletons dropped"}
+  - {id: BL-08, then: "packing clusters of 3,4,3 under cap 8 -> batch sizes [7,3]; 6 and 6 -> [[6],[6]] (clusters never split)"}
+  - {id: BL-09, then: "500 unchecked entities, slice 200 -> 200 chosen, backstop not used"}
+  - {id: BL-10, then: "unchecked/changed entities come before backstop rotation"}
+  - {id: BL-11, then: "all checked, cursor 'b', size 2 -> [c,d], cursor d, backstop used; then cursor d -> wraps to [a,b], cursor b"}
+  - {id: BL-12, then: "backstop not due -> empty slice, cursor unchanged, used false"}
+  - {id: BL-13, then: "resume is by path order: after cursor 'a', a newly inserted 'b' is picked next"}
+  - {id: BL-14, then: "corrupt entity vector cache treated as empty and rebuilt"}
+  - {id: BL-15, then: "prune drops vanished paths (returns 1) or returns 0 when all live"}
+  - {id: BL-16, then: "persist=false writes no entity_vectors.json"}

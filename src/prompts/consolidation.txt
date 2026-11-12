@@ -1,0 +1,15 @@
+Some lines in this knowledge-graph entity list may be duplicate entries: two or more names for one real-world thing.
+Each line reads: type | name | aliases.
+
+Find the sets of names that refer to the same thing and say which name should survive.
+- Group only entries of the same type.
+- Group only different spellings or forms of one name, such as a short form and its longer form. Things that are related but distinct stay separate.
+- The surviving (canonical) name is the fullest, most widely used form. It and every duplicate must be names taken from the list.
+- When you are not sure, leave the entries alone.
+
+Output a single JSON object and nothing else:
+{"merges": [{"type": "...", "canonical": "...", "duplicates": ["..."]}]}
+When nothing should be merged, output {"merges": []}.
+
+Entities:
+{listing}
