@@ -251,12 +251,35 @@ fn which_box() -> Which {
 }
 
 /// Finds an executable file named name on PATH.
+#[cfg(unix)]
 pub fn which_on_path(name: &str) -> Option<PathBuf> {
     use std::os::unix::fs::PermissionsExt;
     let path = std::env::var_os("PATH")?;
     std::env::split_paths(&path)
         .map(|d| d.join(name))
         .find(|p| p.is_file() && std::fs::metadata(p).is_ok_and(|m| m.permissions().mode() & 0o111 != 0))
+}
+
+/// Finds name on PATH, trying each PATHEXT extension in turn (06 §5.4).
+#[cfg(windows)]
+pub fn which_on_path(name: &str) -> Option<PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    let exts = std::env::var("PATHEXT").ok().filter(|e| !e.is_empty()).unwrap_or_else(|| ".COM;.EXE;.BAT;.CMD".into());
+    // a name given with its extension is tried as it stands first
+    let as_given = std::path::Path::new(name).extension().map(|_| name.to_string());
+    let names: Vec<String> = as_given.into_iter().chain(exts.split(';').filter(|e| !e.is_empty()).map(|e| format!("{name}{e}"))).collect();
+    std::env::split_paths(&path).find_map(|d| names.iter().map(|n| d.join(n)).find(|p| p.is_file()))
+}
+
+/// A finished process's exit code; death by a POSIX signal is minus the signal number.
+pub fn exit_code(status: std::process::ExitStatus) -> i32 {
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::ExitStatusExt;
+        status.code().unwrap_or_else(|| -status.signal().unwrap_or(0))
+    }
+    #[cfg(not(unix))]
+    status.code().unwrap_or(0)
 }
 
 /// Runs argv with the prompt on stdin; stdout/stderr decoded with replacement.
@@ -308,7 +331,5 @@ pub fn run_process_for(argv: &[String], stdin: &str, timeout_secs: u64) -> RunOu
     let _ = feeder.join();
     let stdout = String::from_utf8_lossy(&out.join().unwrap_or_default()).into_owned();
     let stderr = String::from_utf8_lossy(&errs.join().unwrap_or_default()).into_owned();
-    use std::os::unix::process::ExitStatusExt;
-    let code = status.code().unwrap_or_else(|| -status.signal().unwrap_or(0));
-    RunOutcome::Exit { code, stdout, stderr }
+    RunOutcome::Exit { code: exit_code(status), stdout, stderr }
 }

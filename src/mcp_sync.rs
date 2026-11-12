@@ -1,6 +1,6 @@
 //! mcp-sync: register missing MCP servers with the claude CLI (15 §6).
 use crate::error::{Error, Kind};
-use crate::extractor::{json_to_y, which_on_path};
+use crate::extractor::{exit_code, json_to_y, which_on_path};
 use crate::text::quoted;
 use serde_json::{Map, Value, json};
 use std::io::Write;
@@ -154,7 +154,37 @@ pub fn add_args(m: &Server) -> Vec<String> {
 }
 
 /// POSIX shell quoting of one word (shlex.quote rules).
+/// One word under the Microsoft C runtime command-line rules (15 §6.3, Windows).
+pub fn quote_word_windows(w: &str) -> String {
+    if !w.is_empty() && !w.contains([' ', '\t', '"']) {
+        return w.into();
+    }
+    let (mut out, mut slashes) = (String::from('"'), 0);
+    for c in w.chars() {
+        match c {
+            '\\' => slashes += 1,
+            '"' => {
+                // backslashes before a quote are doubled, then the quote is escaped
+                out.push_str(&"\\".repeat(slashes * 2 + 1));
+                out.push('"');
+                slashes = 0;
+            }
+            _ => {
+                out.push_str(&"\\".repeat(slashes));
+                out.push(c);
+                slashes = 0;
+            }
+        }
+    }
+    out.push_str(&"\\".repeat(slashes * 2)); // so the closing quote stays a quote
+    out.push('"');
+    out
+}
+
 pub fn quote_word(w: &str) -> String {
+    if cfg!(windows) {
+        return quote_word_windows(w);
+    }
     if w.is_empty() {
         return "''".into();
     }
@@ -252,8 +282,7 @@ pub fn run(o: &Options, out: &mut dyn Write) -> i32 {
                 return 1;
             }
             Ok(st) if !st.success() => {
-                use std::os::unix::process::ExitStatusExt;
-                let code = st.code().unwrap_or_else(|| -st.signal().unwrap_or(0));
+                let code = exit_code(st);
                 say(out, &format!("  FAILED (exit {code}) \u{2014} continuing with the rest"));
                 failed = true;
             }

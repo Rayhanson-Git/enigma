@@ -374,9 +374,9 @@ fn walk_skips_symlinks_that_leave_the_vault() {
     let d = mini_vault();
     let outside = tempfile::tempdir().unwrap();
     fs::write(outside.path().join("secret.md"), "- [ ] SECRET-TOKEN-123 secretword\n").unwrap();
-    std::os::unix::fs::symlink(outside.path().join("secret.md"), d.path().join("leak.md")).unwrap();
-    std::os::unix::fs::symlink(outside.path(), d.path().join("Outside")).unwrap();
-    std::os::unix::fs::symlink("Daily.md", d.path().join("alias.md")).unwrap();
+    symlink(outside.path().join("secret.md"), &d.path().join("leak.md"));
+    symlink(outside.path(), &d.path().join("Outside"));
+    symlink("Daily.md", &d.path().join("alias.md"));
     let v = open(&d);
     let rels: Vec<String> = walk(&v, None).unwrap().into_iter().map(|(_, r)| r).collect();
     assert!(rels.contains(&"alias.md".into()), "in-vault symlinks are still walked");

@@ -11,7 +11,7 @@ pub const RECALL_TIMEOUT_SECS: u64 = 15;
 
 /// EXE: the absolute canonical path of the running executable.
 pub fn exe() -> PathBuf {
-    std::env::current_exe().and_then(|p| p.canonicalize()).unwrap_or_default()
+    std::env::current_exe().and_then(|p| p.canonicalize()).map(crate::config::plain).unwrap_or_default()
 }
 
 /// stdin text as a JSON object; empty → {} (15 §3 step 1, §4 step 1).

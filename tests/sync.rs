@@ -35,13 +35,9 @@ impl Sandbox {
     fn settings(&self) -> PathBuf {
         self.p("settings.json")
     }
-    /// A stub executable on the sandbox PATH.
-    fn stub(&self, name: &str, script: &str) {
-        let p = self.p("bin").join(name);
-        fs::write(&p, script).unwrap();
-        let mut perms = fs::metadata(&p).unwrap().permissions();
-        std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
-        fs::set_permissions(&p, perms).unwrap();
+    /// A stub executable on the sandbox PATH: `script` on POSIX, `ps` (PowerShell) on Windows.
+    fn stub(&self, name: &str, script: &str, ps: &str) {
+        stub_program(&self.p("bin"), name, script, ps);
     }
     fn cmd(&self, args: &[&str]) -> Command {
         let mut c = Command::new(bin());
@@ -55,7 +51,7 @@ impl Sandbox {
             .env("TMPDIR", self.p("tmp"))
             .env("ENIGMA_STATE_DIR", self.p("state"))
             .env("CLAUDE_SETTINGS_PATH", self.settings())
-            .env("PATH", format!("{}:/usr/bin:/bin", self.p("bin").display()));
+            .env("PATH", sandbox_path(&self.p("bin")));
         c
     }
     fn run(&self, args: &[&str], stdin: &[u8], env: &[(&str, &str)]) -> Output {
@@ -670,7 +666,9 @@ fn sync_sk_07() {
 fn recorder(s: &Sandbox, fail_on: Option<(&str, i32)>) -> PathBuf {
     let log = s.p("claude.log");
     let rule = fail_on.map_or(String::new(), |(w, c)| format!("case \"$*\" in *{w}*) exit {c};; esac\n"));
-    s.stub("claude", &format!("#!/bin/sh\n(printf '%s' \"$0\"; for a in \"$@\"; do printf '|%s' \"$a\"; done; echo) >> '{}'\n{rule}exit 0\n", log.display()));
+    let ps_rule = fail_on.map_or(String::new(), |(w, c)| format!("if (($args -join ' ') -like '*{w}*') {{ exit {c} }}\n"));
+    let ps = format!("$line = \"$PSScriptRoot\\claude\"\nforeach ($a in $args) {{ $line += \"|$a\" }}\n[IO.File]::AppendAllText('{}', $line + \"`n\")\n{ps_rule}exit 0\n", log.display());
+    s.stub("claude", &format!("#!/bin/sh\n(printf '%s' \"$0\"; for a in \"$@\"; do printf '|%s' \"$a\"; done; echo) >> '{}'\n{rule}exit 0\n", log.display()), &ps);
     log
 }
 
@@ -880,10 +878,11 @@ fn sync_ms_10() {
     );
 }
 
+#[cfg(unix)] // a script with a missing interpreter is a POSIX failure
 #[test]
 fn sync_ms_11() {
     let s = Sandbox::new();
-    s.stub("claude", "#!/nonexistent/interpreter\n");
+    s.stub("claude", "#!/nonexistent/interpreter\n", "");
     let m = manifest(&s, json!([fetch_entry(), arxiv_entry(), {"name": "third", "command": "t"}]));
     let c = config(&s, &json!({}));
     let o = mcp(&s, &["--manifest", m.to_str().unwrap(), "--config", c.to_str().unwrap()]);
@@ -901,6 +900,7 @@ fn sync_ms_11() {
     );
 }
 
+#[cfg(unix)] // uses POSIX mode bits and POSIX error wording
 #[test]
 fn sync_ms_15() {
     // read and parse problems that are not ABORTs: one 'error:' line on stderr, exit 1, nothing run (D9)
@@ -935,11 +935,12 @@ fn sync_ms_15() {
     assert!(!s.p("claude.log").exists());
 }
 
+#[cfg(unix)] // a script whose interpreter cannot run is a POSIX failure
 #[test]
 fn sync_ms_16() {
     // starting claude fails for a reason other than not-found: the run stops at that server, exit 1 (D10)
     let s = Sandbox::new();
-    s.stub("claude", "#!/etc/hosts\n");
+    s.stub("claude", "#!/etc/hosts\n", "");
     let m = manifest(&s, json!([fetch_entry(), arxiv_entry()]));
     let c = config(&s, &json!({}));
     let o = mcp(&s, &["--manifest", m.to_str().unwrap(), "--config", c.to_str().unwrap()]);
@@ -1332,7 +1333,7 @@ fn sync_pl_01() {
     write("Claude/EPERM-always.md").unwrap();
     assert_eq!(faults::calls("publish"), 1);
     faults::reset();
-    faults::arm("publish", Fault::Os(13), 5);
+    faults::arm("publish", Fault::Os(if cfg!(windows) { 5 } else { 13 }), 5); // the system's own lock error
     let e = write("Claude/EACCES.md").unwrap_err();
     assert_eq!(e.kind, Kind::IoError, "EACCES is reported after the retries");
     faults::reset();
@@ -1355,4 +1356,17 @@ fn sync_pl_02() {
     for text in [fs::read(s.settings()).unwrap(), fs::read(v.path().join(".obsidian/community-plugins.json")).unwrap(), fs::read(v.path().join(".smart-env/smart_env.json")).unwrap(), plist.into_bytes()] {
         assert!(!text.contains(&b'\r'));
     }
+}
+
+#[test]
+fn mcp_sync_windows_quoting() {
+    // 15 §6.3: on Windows the printed command uses the Microsoft C runtime rules
+    use enigma_mcp::mcp_sync::quote_word_windows as q;
+    assert_eq!(q("plain"), "plain");
+    assert_eq!(q(""), "\"\"");
+    assert_eq!(q("a b"), "\"a b\"");
+    assert_eq!(q(r#"say "hi""#), r#""say \"hi\"""#);
+    assert_eq!(q(r"C:\plain\"), r"C:\plain\");
+    assert_eq!(q(r"C:\dir with space\"), r#""C:\dir with space\\""#);
+    assert_eq!(q(r#"a\"b"#), r#""a\\\"b""#);
 }

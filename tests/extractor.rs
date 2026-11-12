@@ -209,11 +209,12 @@ fn extractor_ex_11() {
     assert!(argv.iter().all(|a| a.len() < 100));
     // a real child process reading 100 KB from stdin
     let dir = tempfile::tempdir().unwrap();
-    let script = dir.path().join("codex");
-    std::fs::write(&script, "#!/bin/sh\ncat > /dev/null\necho '{\"entities\": [{\"name\": \"Echo\"}]}'\n").unwrap();
-    let mut perms = std::fs::metadata(&script).unwrap().permissions();
-    std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
-    std::fs::set_permissions(&script, perms).unwrap();
+    let script = common::stub_program(
+        dir.path(),
+        "codex",
+        "#!/bin/sh\ncat > /dev/null\necho '{\"entities\": [{\"name\": \"Echo\"}]}'\n",
+        "[Console]::In.ReadToEnd() | Out-Null\n'{\"entities\": [{\"name\": \"Echo\"}]}'\n",
+    );
     let real = Cli::new(Some("codex"), "", at(script.to_str().unwrap()), Box::new(run_process)).unwrap();
     assert_eq!(real.extract("big.md", &content).unwrap().entities[0].name, "Echo");
 }
@@ -278,11 +279,7 @@ fn extractor_ex_16() {
 #[test]
 fn extractor_ex_17() {
     let dir = tempfile::tempdir().unwrap();
-    let fake = dir.path().join("claude");
-    std::fs::write(&fake, "#!/bin/sh\nexit 1\n").unwrap();
-    let mut perms = std::fs::metadata(&fake).unwrap().permissions();
-    std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
-    std::fs::set_permissions(&fake, perms).unwrap();
+    common::stub_program(dir.path(), "claude", "#!/bin/sh\nexit 1\n", "exit 1\n");
     let path = dir.path().to_str().unwrap();
     in_child("ex_17_models", &[("PATH", path), ("ENIGMA_EXTRACTOR", "claude"), ("EX17_WANT", "haiku,sonnet")]);
     in_child(
@@ -335,11 +332,7 @@ fn extractor_ex_19() {
 #[test]
 fn extractor_ex_20() {
     let dir = tempfile::tempdir().unwrap();
-    let fake = dir.path().join("claude");
-    std::fs::write(&fake, "#!/bin/sh\nexit 1\n").unwrap();
-    let mut perms = std::fs::metadata(&fake).unwrap().permissions();
-    std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
-    std::fs::set_permissions(&fake, perms).unwrap();
+    common::stub_program(dir.path(), "claude", "#!/bin/sh\nexit 1\n", "exit 1\n");
     let path = dir.path().to_str().unwrap();
     in_child("ex_20_empty", &[("PATH", path), ("ENIGMA_EXTRACTOR", ""), ("ENIGMA_EXTRACT_MODEL", ""), ("ENIGMA_CONSOLIDATE_MODEL", "")]);
 }

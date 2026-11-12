@@ -54,7 +54,7 @@ pub fn candidates(v: &Vault, labelled: &[String]) -> Result<Vec<String>> {
         .flatten()
         .filter(|e| e.path().is_file())
         .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| n.ends_with(".md") && !EXCLUDED_ROOT_FILES.contains(&n.as_str()))
+        .filter(|n| crate::vault::is_md(n) && !EXCLUDED_ROOT_FILES.contains(&n.as_str()))
         .collect();
     root.sort();
     let mut out = Vec::new();

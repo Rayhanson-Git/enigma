@@ -234,26 +234,87 @@ pub fn objects(result: &Value) -> Vec<Value> {
     texts(result).iter().map(|t| serde_json::from_str(t).unwrap()).collect()
 }
 
+/// Marks a file as a program. POSIX needs the mode bits; on Windows the extension decides.
+pub fn make_executable(p: &Path) {
+    #[cfg(unix)]
+    {
+        let mut perms = fs::metadata(p).unwrap().permissions();
+        std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
+        fs::set_permissions(p, perms).unwrap();
+    }
+    #[cfg(not(unix))]
+    let _ = p;
+}
+
+/// Puts a stand-in program called `name` in `dir`: the POSIX shell script `sh`,
+/// or on Windows `name.cmd` running the PowerShell script `ps`.
+pub fn stub_program(dir: &Path, name: &str, sh: &str, ps: &str) -> PathBuf {
+    if cfg!(windows) {
+        fs::write(dir.join(format!("{name}.ps1")), ps).unwrap();
+        let cmd = dir.join(format!("{name}.cmd"));
+        fs::write(&cmd, format!("@powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0{name}.ps1\" %*\r\n")).unwrap();
+        cmd
+    } else {
+        let script = dir.join(name);
+        fs::write(&script, sh).unwrap();
+        make_executable(&script);
+        script
+    }
+}
+
+/// A symbolic link at `link` pointing to `target` (relative targets are relative to the link's folder).
+pub fn symlink(target: impl AsRef<Path>, link: &Path) {
+    let target = target.as_ref();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).unwrap();
+    // shortcut: needs Developer Mode or an elevated shell on Windows (CI runners have it)
+    #[cfg(windows)]
+    if link.parent().unwrap().join(target).is_dir() {
+        std::os::windows::fs::symlink_dir(target, link).unwrap();
+    } else {
+        std::os::windows::fs::symlink_file(target, link).unwrap();
+    }
+}
+
+/// A number that changes when a file is replaced by a new one.
+pub fn file_identity(p: &Path) -> u64 {
+    let m = fs::metadata(p).unwrap();
+    #[cfg(unix)]
+    return std::os::unix::fs::MetadataExt::ino(&m);
+    #[cfg(windows)]
+    return std::os::windows::fs::MetadataExt::creation_time(&m);
+}
+
 /// A directory holding a fake "codex" CLI: Orbital Freight for notes whose
 /// prompt mentions Lighthouse, empty extractions otherwise, and no merges for
 /// consolidation prompts. Never a real LLM CLI.
 pub fn fake_codex_dir() -> TempDir {
     let d = tempfile::tempdir().unwrap();
-    let script = d.path().join("codex");
-    fs::write(
-        &script,
+    stub_program(
+        d.path(),
+        "codex",
         "#!/bin/sh\ninput=$(cat)\ncase \"$input\" in\n  *\"duplicate entries\"*) echo '{\"merges\": []}' ;;\n  *\"Note path: \"*Lighthouse*) echo '{\"entities\": [{\"name\": \"Orbital Freight\", \"type\": \"organization\", \"aliases\": [], \"summary\": \"A company.\"}], \"relations\": []}' ;;\n  *) echo '{\"entities\": [], \"relations\": []}' ;;\nesac\n",
-    )
-    .unwrap();
-    let mut perms = fs::metadata(&script).unwrap().permissions();
-    std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
-    fs::set_permissions(&script, perms).unwrap();
+        "$text = [Console]::In.ReadToEnd()\nif ($text -like '*duplicate entries*') { '{\"merges\": []}' }\nelseif ($text -match '(?s)Note path: .*Lighthouse') { '{\"entities\": [{\"name\": \"Orbital Freight\", \"type\": \"organization\", \"aliases\": [], \"summary\": \"A company.\"}], \"relations\": []}' }\nelse { '{\"entities\": [], \"relations\": []}' }\n",
+    );
     d
 }
 
+/// The separator between PATH entries.
+pub const PATH_SEP: &str = if cfg!(windows) { ";" } else { ":" };
+
 /// PATH with the fake CLI directory first.
 pub fn path_with(dir: &Path) -> String {
-    format!("{}:{}", dir.display(), std::env::var("PATH").unwrap_or_default())
+    format!("{}{PATH_SEP}{}", dir.display(), std::env::var("PATH").unwrap_or_default())
+}
+
+/// A PATH holding one folder plus only the system's own tools.
+pub fn sandbox_path(dir: &Path) -> String {
+    if cfg!(windows) {
+        let sys = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+        format!(r"{};{sys}\System32;{sys}\System32\WindowsPowerShell\v1.0", dir.display())
+    } else {
+        format!("{}:/usr/bin:/bin", dir.display())
+    }
 }
 
 /// The fenced ```text block after `marker` in a spec file, without its final LF.

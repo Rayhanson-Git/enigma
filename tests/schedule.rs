@@ -1,3 +1,4 @@
+#![cfg(unix)] // launchd is macOS only; tests/windows.rs covers the Windows refusal
 //! acceptance/sync.yaml SC-01..09: enigma-mcp schedule. HOME is a temp dir and ENIGMA_LAUNCHCTL a stub that
 //! only logs its arguments; the real launchctl is never run.
 mod common;

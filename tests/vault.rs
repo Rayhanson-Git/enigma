@@ -7,9 +7,16 @@ use enigma_mcp::vault::Vault;
 use std::fs;
 use std::sync::{Arc, Barrier};
 
+// A lock error, a "no hard links here" error and a plain I/O error, as each system numbers them.
+#[cfg(unix)]
 const EACCES: i32 = 13;
-const EPERM: i32 = 1;
+#[cfg(unix)]
 const EIO: i32 = 5;
+#[cfg(windows)]
+const EACCES: i32 = 5; // ERROR_ACCESS_DENIED
+#[cfg(windows)]
+const EIO: i32 = 1117; // ERROR_IO_DEVICE
+const EPERM: i32 = 1; // Windows: ERROR_INVALID_FUNCTION, which also means "fall back"
 
 #[test]
 fn vault_va_01() {
@@ -278,8 +285,8 @@ fn vault_symlinks_cannot_escape() {
     let d = mini_vault();
     let outside = tempfile::tempdir().unwrap();
     fs::write(outside.path().join("secret.txt"), "SECRET").unwrap();
-    std::os::unix::fs::symlink(outside.path().join("secret.txt"), d.path().join("leak.md")).unwrap();
-    std::os::unix::fs::symlink(outside.path(), d.path().join("Claude/out")).unwrap();
+    symlink(outside.path().join("secret.txt"), &d.path().join("leak.md"));
+    symlink(outside.path(), &d.path().join("Claude/out"));
     let v = open(&d);
     for e in [
         v.read("leak.md").unwrap_err(),
@@ -298,7 +305,7 @@ fn vault_symlinks_cannot_escape() {
 #[test]
 fn vault_symlink_into_human_area_is_quarantined() {
     let d = mini_vault();
-    std::os::unix::fs::symlink("../Projects", d.path().join("Claude/human")).unwrap();
+    symlink("../Projects", &d.path().join("Claude/human"));
     let e = open(&d).write("Claude/human/x.md", "x", false, false).unwrap_err();
     assert!(e.msg.contains("outside Claude/"), "{}", e.msg);
     assert!(!d.path().join("Projects/x.md").exists());

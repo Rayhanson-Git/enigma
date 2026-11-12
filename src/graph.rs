@@ -146,7 +146,7 @@ pub fn find_entity_note(v: &Vault, ty: &str, name: &str) -> Result<Option<String
         .flatten()
         .filter(|e| e.path().is_file())
         .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| n.ends_with(".md"))
+        .filter(|n| crate::vault::is_md(n))
         .collect();
     files.sort();
     let (want, want_safe) = (casefold(name), casefold(&safe_filename(name)));

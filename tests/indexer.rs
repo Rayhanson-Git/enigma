@@ -217,10 +217,9 @@ fn indexer_ix_14() {
     let st = tempfile::tempdir().unwrap();
     go(&d, st.path(), &Fake::default(), &Options::default());
     let db = st.path().join("graph.db");
-    let ino = |p: &Path| std::os::unix::fs::MetadataExt::ino(&std::fs::metadata(p).unwrap());
-    let before = ino(&db);
+    let before = file_identity(&db);
     assert_eq!(go(&d, st.path(), &Fake::default(), &Options::default()).processed, 0);
-    assert_eq!(ino(&db), before, "graph.db was not rebuilt");
+    assert_eq!(file_identity(&db), before, "graph.db was not rebuilt");
 }
 
 #[test]
@@ -374,10 +373,12 @@ fn indexer_ix_21() {
     assert!(!Graph::load(&st.path().join("graph.db")).unwrap().find("orbital", None).is_empty());
 }
 
+#[cfg(unix)]
 fn set_mode(p: &Path, mode: u32) {
     std::fs::set_permissions(p, std::os::unix::fs::PermissionsExt::from_mode(mode)).unwrap();
 }
 
+#[cfg(unix)] // makes a note unreadable with POSIX mode bits
 #[test]
 fn indexer_ix_22() {
     // unreadable notes are per-note failures: the run finishes, saves progress and retries them later

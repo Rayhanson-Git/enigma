@@ -15,10 +15,11 @@ pub fn render(template: &str, bin: &Path, vault: &Path, home: &Path) -> String {
     template.replace("{BIN}", &xml(bin)).replace("{VAULT}", &xml(vault)).replace("{HOME}", &xml(home))
 }
 
-/// LOCK: $TMPDIR/enigma-index.lock, or /tmp/enigma-index.lock.
+/// LOCK: $TMPDIR/enigma-index.lock, or /tmp/enigma-index.lock (on Windows the system temp folder).
 pub fn lock_path() -> PathBuf {
     match std::env::var("TMPDIR") {
         Ok(t) if !t.is_empty() => PathBuf::from(t).join("enigma-index.lock"),
+        _ if cfg!(windows) => std::env::temp_dir().join("enigma-index.lock"),
         _ => PathBuf::from("/tmp/enigma-index.lock"),
     }
 }
@@ -27,9 +28,22 @@ fn stamp() -> String {
     crate::mover::second_stamp(&crate::text::now())
 }
 
+/// The command that lists running processes, one "pid command line" per line.
+fn process_list() -> Command {
+    if cfg!(windows) {
+        let mut c = Command::new("powershell");
+        c.args(["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process | ForEach-Object { \"$($_.ProcessId) $($_.CommandLine)\" }"]);
+        c
+    } else {
+        let mut c = Command::new("ps");
+        c.args(["-Ao", "pid=,command="]);
+        c
+    }
+}
+
 /// Command lines of running processes as (pid, command).
 fn processes() -> Vec<(u32, String)> {
-    let Ok(out) = Command::new("ps").args(["-Ao", "pid=,command="]).stderr(Stdio::null()).output() else { return vec![] };
+    let Ok(out) = process_list().stdin(Stdio::null()).stderr(Stdio::null()).output() else { return vec![] };
     String::from_utf8_lossy(&out.stdout)
         .lines()
         .filter_map(|l| {
@@ -38,6 +52,12 @@ fn processes() -> Vec<(u32, String)> {
         })
         .collect()
 }
+
+/// The signals that end a run early; Windows has no SIGHUP.
+#[cfg(unix)]
+const STOP_SIGNALS: [libc::c_int; 3] = [libc::SIGINT, libc::SIGTERM, libc::SIGHUP];
+#[cfg(windows)]
+const STOP_SIGNALS: [libc::c_int; 2] = [libc::SIGINT, libc::SIGTERM];
 
 /// The last SIGINT/SIGTERM/SIGHUP received while the lock is held (0: none).
 static SIGNAL: AtomicI32 = AtomicI32::new(0);
@@ -114,7 +134,7 @@ pub fn run(vault: &Path, state_dir: Option<&Path>, exe: &Path) -> u8 {
     }
     let _ = std::fs::write(lock.join("pid"), format!("{}\n", std::process::id()));
     // a signal does not stop the running round; it ends the run once that round returns
-    for sig in [libc::SIGINT, libc::SIGTERM, libc::SIGHUP] {
+    for sig in STOP_SIGNALS {
         unsafe { libc::signal(sig, on_signal as *const () as libc::sighandler_t) };
     }
     let code = rounds(vault, state_dir, exe, &lock);

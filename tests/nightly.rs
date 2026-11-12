@@ -1,3 +1,4 @@
+#![cfg(unix)] // these cases drive the runner with POSIX shell stubs and signals; tests/windows.rs has the Windows smoke test
 //! acceptance/sync.yaml NT-01..11: the nightly index runner. Cases run one at a time because the runner
 //! skips while another indexer process is running. HOME, TMPDIR and the state dir are temp dirs; PATH
 //! holds only stub extractors plus /usr/bin:/bin. Rounds load the real embedding model, read-only from

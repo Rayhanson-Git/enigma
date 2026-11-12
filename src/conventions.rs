@@ -26,8 +26,26 @@ fn write(path: &Path, text: &str) -> Result<()> {
     fs::write(path, text).map_err(|e| Error::io(&e, path))
 }
 
+/// The display name of the account running the command, if it has one.
+#[cfg(windows)]
+pub fn system_owner() -> Option<String> {
+    #[link(name = "secur32")]
+    unsafe extern "system" {
+        fn GetUserNameExW(format: i32, buffer: *mut u16, size: *mut u32) -> u8;
+    }
+    const NAME_DISPLAY: i32 = 3;
+    let mut buf = [0u16; 256];
+    let mut len = buf.len() as u32;
+    // on success len is the number of characters written, without the final NUL
+    if unsafe { GetUserNameExW(NAME_DISPLAY, buf.as_mut_ptr(), &mut len) } == 0 {
+        return None; // a local account often has no display name
+    }
+    clean(&String::from_utf16_lossy(&buf[..(len as usize).min(buf.len())]))
+}
+
 /// The full name of the account running the command (the first field of its
 /// passwd entry), if it has one.
+#[cfg(unix)]
 pub fn system_owner() -> Option<String> {
     // getpwuid returns a pointer into static storage; the name is copied out at once
     let gecos = unsafe {

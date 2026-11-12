@@ -12,7 +12,9 @@ use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
 
 // POSIX errno values (identical on Linux and macOS).
+#[cfg(unix)]
 const EPERM: i32 = 1;
+#[cfg(unix)]
 const EACCES: i32 = 13;
 
 /// Resolves an absolute path like a non-strict realpath: "." and ".." are
@@ -23,7 +25,8 @@ pub fn resolve_path(p: &Path) -> PathBuf {
     let mut hops = 0;
     while let Some(part) = todo.pop_front() {
         match part.components().next() {
-            Some(Component::RootDir) | Some(Component::Prefix(_)) => out = part,
+            Some(Component::Prefix(_)) => out = part,
+            Some(Component::RootDir) => out.push(part), // after a drive prefix the root joins it
             Some(Component::CurDir) | None => {}
             Some(Component::ParentDir) => {
                 out.pop();
@@ -45,8 +48,51 @@ pub fn resolve_path(p: &Path) -> PathBuf {
     out
 }
 
+#[cfg(unix)]
 fn is_lock_err(e: &io::Error) -> bool {
     matches!(e.raw_os_error(), Some(EACCES) | Some(EPERM))
+}
+
+/// Windows: access denied, sharing violation, lock violation (03 §5.1).
+#[cfg(windows)]
+fn is_lock_err(e: &io::Error) -> bool {
+    matches!(e.raw_os_error(), Some(5 | 32 | 33))
+}
+
+/// The hard-link step's own lock test (03 §5.2 table): POSIX EPERM there means "no hard links".
+fn link_lock_err(e: &io::Error) -> bool {
+    #[cfg(unix)]
+    return e.raw_os_error() == Some(EACCES);
+    #[cfg(windows)]
+    return is_lock_err(e);
+}
+
+/// Component-wise prefix test; on Windows case-insensitive, with `/` read as `\` (03 §2, §3).
+pub fn within(p: &Path, base: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        let fold = |x: &Path| PathBuf::from(x.to_string_lossy().to_lowercase().replace('/', "\\"));
+        fold(p).starts_with(fold(base))
+    }
+    #[cfg(not(windows))]
+    p.starts_with(base)
+}
+
+/// A note's file name ends in `.md`: exactly on POSIX, in any case on Windows (00 §2).
+pub fn is_md(name: &str) -> bool {
+    if cfg!(windows) { name.to_lowercase().ends_with(".md") } else { name.ends_with(".md") }
+}
+
+/// Opens a file for appending, creating it if absent (03 §5.3 step 3).
+fn open_append(target: &Path) -> io::Result<fs::File> {
+    let mut o = OpenOptions::new();
+    o.append(true).create(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        o.access_mode(0x0004).share_mode(0x7); // FILE_APPEND_DATA only; share read, write and delete
+    }
+    o.open(target)
 }
 
 fn backoff(k: u64) {
@@ -91,11 +137,11 @@ impl Vault {
 
     pub fn resolve(&self, rel: &str) -> Result<PathBuf> {
         let p = resolve_path(&self.root.join(rel));
-        if p.starts_with(&self.root) { Ok(p) } else { Err(Error::vault(format!("Path escapes the vault: {rel}"))) }
+        if within(&p, &self.root) { Ok(p) } else { Err(Error::vault(format!("Path escapes the vault: {rel}"))) }
     }
 
     pub fn in_claude(&self, resolved: &Path) -> bool {
-        resolved.starts_with(self.root.join("Claude"))
+        within(resolved, &self.root.join("Claude"))
     }
 
     /// rel path of an absolute path inside the vault, "/"-joined.
@@ -158,7 +204,7 @@ impl Vault {
             match faults::os("publish").and_then(|_| fs::hard_link(tmp, target)) {
                 Ok(()) => return Ok(()),
                 Err(e) if e.kind() == io::ErrorKind::AlreadyExists => return Err(exists_error(rel)),
-                Err(e) if e.raw_os_error() == Some(EACCES) => {
+                Err(e) if link_lock_err(&e) => {
                     if k == 5 {
                         return Err(Error::io(&e, target));
                     }
@@ -175,7 +221,7 @@ impl Vault {
         let target = self.checked_target(rel, confirm)?;
         let dir = target.parent().unwrap_or(&self.root);
         fs::create_dir_all(dir).map_err(|e| Error::io(&e, dir))?;
-        let mut f = retry("append_open", || OpenOptions::new().append(true).create(true).open(&target))
+        let mut f = retry("append_open", || open_append(&target))
             .map_err(|e| Error::io(&e, &target))?;
         write_once(&mut f, content.as_bytes(), "append_write").map_err(|e| Error::io(&e, &target))?;
         Ok(target)

@@ -416,7 +416,7 @@ pub fn rows(v: &Vault, sc: &Schema) -> Result<Vec<Row>> {
         .flatten()
         .filter(|e| e.path().is_file())
         .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| n.ends_with(".md") && n != SCHEMA_FILE)
+        .filter(|n| crate::vault::is_md(n) && n != SCHEMA_FILE)
         .collect();
     names.sort();
     names

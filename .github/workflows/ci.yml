@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, windows]
   pull_request:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     env:
       HF_HUB_OFFLINE: "1"
@@ -24,9 +24,11 @@ jobs:
       - name: Fetch the embedding model
         env:
           HF_HUB_OFFLINE: "0"
+        shell: bash
         run: |
-          python3 -m pip install --user --break-system-packages -U huggingface_hub
-          python3 -c "from huggingface_hub import snapshot_download; snapshot_download('TaylorAI/bge-micro-v2', allow_patterns=['config.json', 'tokenizer.json', 'model.safetensors'])"
+          PY=$(command -v python3 || command -v python)
+          "$PY" -m pip install --user --break-system-packages -U huggingface_hub
+          "$PY" -c "from huggingface_hub import snapshot_download; snapshot_download('TaylorAI/bge-micro-v2', allow_patterns=['config.json', 'tokenizer.json', 'model.safetensors'])"
       - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
+      - run: cargo test --no-fail-fast
       - run: cargo build --release

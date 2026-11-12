@@ -23,10 +23,25 @@ pub fn truthy(name: &str) -> bool {
 pub fn open_root(p: &Path) -> Result<PathBuf> {
     let abs = std::path::absolute(p).map_err(|e| Error::io(&e, p))?;
     match std::fs::canonicalize(&abs) {
-        Ok(c) if c.is_dir() => Ok(c),
-        Ok(c) => Err(Error::vault(format!("Vault root does not exist: {}", c.display()))),
+        Ok(c) if c.is_dir() => Ok(plain(c)),
+        Ok(c) => Err(Error::vault(format!("Vault root does not exist: {}", plain(c).display()))),
         Err(_) => Err(Error::vault(format!("Vault root does not exist: {}", crate::vault::resolve_path(&abs).display()))),
     }
+}
+
+/// A resolved path as it is shown: on Windows without the `\\?\` verbatim prefix (01 §3).
+pub fn plain(p: PathBuf) -> PathBuf {
+    #[cfg(windows)]
+    {
+        let s = p.to_string_lossy();
+        if let Some(unc) = s.strip_prefix(r"\\?\UNC\") {
+            return PathBuf::from(format!(r"\\{unc}"));
+        }
+        if let Some(rest) = s.strip_prefix(r"\\?\") {
+            return PathBuf::from(rest);
+        }
+    }
+    p
 }
 
 static ROOT: Mutex<Option<PathBuf>> = Mutex::new(None);
@@ -50,7 +65,7 @@ pub fn home() -> PathBuf {
 /// The state dir derived from HOME and the vault (01 §4 step 2), not created.
 pub fn derived_state_dir(root: &Path) -> Result<PathBuf> {
     let abs = std::path::absolute(root).map_err(|e| Error::io(&e, root))?;
-    let canon = std::fs::canonicalize(&abs).unwrap_or_else(|_| crate::vault::resolve_path(&abs));
+    let canon = std::fs::canonicalize(&abs).map(plain).unwrap_or_else(|_| crate::vault::resolve_path(&abs));
     let digest = Sha256::digest(canon.to_string_lossy().as_bytes());
     let hex: String = digest.iter().take(6).map(|b| format!("{b:02x}")).collect();
     Ok(home().join(".enigma-mcp").join(hex))

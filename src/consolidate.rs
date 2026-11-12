@@ -334,7 +334,7 @@ fn dup_note(v: &Vault, ty: &str, d: &str) -> Result<Option<String>> {
     let Some(f) = folder(ty) else { return Ok(None) };
     let Ok(rd) = std::fs::read_dir(v.resolve(&format!("Claude/Graph/{f}"))?) else { return Ok(None) };
     let mut files: Vec<String> =
-        rd.flatten().filter(|e| e.path().is_file()).map(|e| e.file_name().to_string_lossy().into_owned()).filter(|n| n.ends_with(".md")).collect();
+        rd.flatten().filter(|e| e.path().is_file()).map(|e| e.file_name().to_string_lossy().into_owned()).filter(|n| crate::vault::is_md(n)).collect();
     files.sort();
     match files.into_iter().find(|n| casefold(strip_md(n)) == casefold(d)) {
         Some(n) => live(&format!("Claude/Graph/{f}/{n}")),

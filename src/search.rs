@@ -31,13 +31,16 @@ pub fn walk(v: &Vault, folder: Option<&str>) -> Result<Vec<(PathBuf, String)>> {
         return Ok(vec![]);
     }
     let mut out = Vec::new();
-    let entries = WalkDir::new(&base)
-        .min_depth(1)
-        .sort_by_file_name()
+    let walker = WalkDir::new(&base).min_depth(1);
+    #[cfg(not(windows))]
+    let walker = walker.sort_by_file_name();
+    #[cfg(windows)] // path order lowercases each component first (00 §3.3)
+    let walker = walker.sort_by_key(|e| e.file_name().to_string_lossy().to_lowercase());
+    let entries = walker
         .into_iter()
         .filter_entry(|e| !(e.file_type().is_dir() && e.file_name().to_str().is_some_and(|n| SKIPPED.contains(&n))));
     for e in entries.flatten() {
-        if !e.file_name().to_string_lossy().ends_with(".md") {
+        if !crate::vault::is_md(&e.file_name().to_string_lossy()) {
             continue;
         }
         let rel = v.rel_of(e.path());
@@ -45,7 +48,7 @@ pub fn walk(v: &Vault, folder: Option<&str>) -> Result<Vec<(PathBuf, String)>> {
             continue;
         }
         // 00 §7: a symlink whose real path leaves the vault is never walked
-        if e.path_is_symlink() && !crate::vault::resolve_path(e.path()).starts_with(&v.root) {
+        if e.path_is_symlink() && !crate::vault::within(&crate::vault::resolve_path(e.path()), &v.root) {
             continue;
         }
         out.push((e.into_path(), rel));

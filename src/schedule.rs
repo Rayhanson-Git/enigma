@@ -27,9 +27,18 @@ fn launchctl() -> String {
     config::var("ENIGMA_LAUNCHCTL").unwrap_or_else(|| "/bin/launchctl".into())
 }
 
+#[cfg(unix)]
 fn domain() -> String {
     format!("gui/{}", unsafe { libc::getuid() })
 }
+
+#[cfg(not(unix))]
+fn domain() -> String {
+    "gui/0".into() // never used: schedule refuses before it reaches launchd
+}
+
+/// launchd exists only on macOS; Windows is told so at once (15 §9.2).
+const NOT_ON_WINDOWS: &str = "schedule manages macOS launchd jobs only; on Windows, schedule \"enigma-mcp librarian <vault>\" with Task Scheduler";
 
 fn shown(cmd: &[String]) -> String {
     cmd.iter().map(|w| quote_word(w)).collect::<Vec<_>>().join(" ")
@@ -61,6 +70,9 @@ fn refuse(msg: String) -> u8 {
 
 /// install / print (15 §9.2); returns the exit code.
 pub fn install(job: &Job, vault: &Path) -> u8 {
+    if cfg!(windows) {
+        return refuse(NOT_ON_WINDOWS.into());
+    }
     let root = match config::open_root(vault) {
         Ok(r) => r,
         Err(e) => {
@@ -142,6 +154,9 @@ pub fn install(job: &Job, vault: &Path) -> u8 {
 
 /// uninstall (15 §9.2); a clean no-op when nothing is installed.
 pub fn uninstall(job: &Job) -> u8 {
+    if cfg!(windows) {
+        return refuse(NOT_ON_WINDOWS.into());
+    }
     let p = plist(&config::home(), job.name);
     if !p.exists() {
         println!("not installed: {}", label(job.name));
