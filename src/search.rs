@@ -352,13 +352,26 @@ pub fn stale_notes(v: &Vault, state_dir: &Path) -> Result<Vec<String>> {
 // ----------------------------------------------------------------- hybrid
 
 pub fn rrf(lanes: &[Vec<String>]) -> Vec<String> {
+    rrf_weighted(lanes, |_| 1.0)
+}
+
+/// Entity notes are generated from other notes, so a hit on one counts half:
+/// the note someone wrote should come before the entity that was extracted from it.
+const DERIVED_WEIGHT: f64 = 0.5;
+
+fn hit_weight(rel: &str) -> f64 {
+    if rel.starts_with("Claude/Graph/") { DERIVED_WEIGHT } else { 1.0 }
+}
+
+/// RRF with each item's fused score multiplied by weight(item) before sorting.
+pub fn rrf_weighted(lanes: &[Vec<String>], weight: impl Fn(&str) -> f64) -> Vec<String> {
     let mut scores: IndexMap<&str, f64> = IndexMap::new();
     for lane in lanes {
         for (i, item) in lane.iter().enumerate() {
             *scores.entry(item.as_str()).or_insert(0.0) += 1.0 / (60.0 + (i + 1) as f64);
         }
     }
-    let mut items: Vec<(&str, f64)> = scores.into_iter().collect();
+    let mut items: Vec<(&str, f64)> = scores.into_iter().map(|(k, s)| (k, s * weight(k))).collect();
     items.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     items.into_iter().map(|(s, _)| s.to_string()).collect()
 }
@@ -431,7 +444,7 @@ pub fn hybrid(
         lanes.push(substring_lane(&corpus, query));
     }
     let texts: HashMap<&str, &str> = corpus.iter().map(|(r, t)| (r.as_str(), t.as_str())).collect();
-    Ok(slice(rrf(&lanes), limit)
+    Ok(slice(rrf_weighted(&lanes, hit_weight), limit)
         .into_iter()
         .map(|rel| {
             let ex = excerpt(texts.get(rel.as_str()).copied().unwrap_or(""), &rel, query);

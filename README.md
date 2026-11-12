@@ -536,7 +536,7 @@ answers are known:
 
 | success@5 | success@10 | MRR |
 |---|---|---|
-| 0.94 | 1.00 | 0.66 |
+| 0.97 | 1.00 | 0.84 |
  For your own vault, create a private golden set with `enigma-mcp evals --init-live --vault <vault>` and
 run `enigma-mcp evals --live`.
 

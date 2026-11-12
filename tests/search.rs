@@ -136,6 +136,9 @@ fn search_hy_02() {
     assert_eq!(fused[2], "z");
     assert_eq!(rrf(&[s(&["x"]), vec![]]), ["x"]);
     assert!(rrf(&[vec![], vec![]]).is_empty());
+    // HY-13: with equal ranks, a generated entity note comes after the note it was extracted from
+    let both = s(&["Claude/Graph/Topics/Varroa.md", "Notes/Varroa Mites.md"]);
+    assert_eq!(enigma_mcp::search::rrf_weighted(&[both.clone(), both], |r| if r.starts_with("Claude/Graph/") { 0.5 } else { 1.0 })[0], "Notes/Varroa Mites.md");
 }
 
 #[test]

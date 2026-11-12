@@ -194,7 +194,10 @@ hybrid(query, tags = null, folder = null, limit = 20) → list of
    candidate set, score cosine(vec, q); sort by score descending (stable);
    keep scores strictly greater than 0; first 50 rels.
 7. Lanes = [K, S]; if K is empty, append the substring lane (below).
-8. fused = RRF(lanes), then take `fused[:limit]` with slice semantics:
+8. fused = RRF(lanes) with every score of a rel that starts with
+   `Claude/Graph/` multiplied by 0.5 before sorting (an entity note is
+   generated from other notes, so the note someone wrote comes first), then
+   take `fused[:limit]` with slice semantics:
    limit ≥ 0 keeps the first limit items; a negative limit drops |limit|
    items from the end (edge case Q7).
 9. Return `{"path": rel, "excerpt": excerpt(text, rel, query)}` for each.

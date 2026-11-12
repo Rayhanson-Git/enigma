@@ -24,6 +24,7 @@ cases:
   - {id: HY-07, given: "aaa.md 'an important announcement was made' and zzz.md 'the port of hamburg is busy'", when: "query 'port'", then: "zzz.md present, aaa.md absent (substring lane is off when BM25 has hits)"}
   - {id: HY-08, then: "excerpt of '---\ntags: [x]\n---\n\n# Title Line\n\nReal content here.\n' for an unrelated query is '# Title Line'"}
   - {id: HY-09, then: "excerpt of '---\ntags: [billing]\n---\n\nInvoice for the billing cycle.\n' for 'billing' is 'Invoice for the billing cycle.' (never a frontmatter line)"}
+  - {id: HY-13, then: "an entity note under Claude/Graph/ and an ordinary note with the same lane ranks: the ordinary note is returned first, because the entity note's fused score is halved"}
   - {id: HY-10, then: "frontmatter-only note -> excerpt ''"}
   - {id: HY-11, then: "path Claude/Sessions/Weekly Review.md, query 'weekly' -> '(title match)'"}
   - {id: HY-12, then: "semantic-only hit on a note with frontmatter returns the first body line as excerpt"}

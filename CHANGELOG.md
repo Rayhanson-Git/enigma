@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search: entity notes under `Claude/Graph/` count half in the final ranking, so the note a person or agent
+  wrote comes before the entity extracted from it. On the real-vault test set MRR rises from 0.66 to 0.84.
 - README: a time-lapse of a real vault's graph forming, and a brushed-metal emblem in the banner.
 
 ## 1.2.0
