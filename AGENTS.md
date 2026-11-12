@@ -13,7 +13,8 @@ Check first, and stop with a clear message if something is missing:
 - `cargo --version` works (Rust 1.85 or newer). Ask before installing Rust.
 - Obsidian is installed and the vault folder exists.
 - `claude` or `codex` is on `PATH`. Enigma uses one of them to read notes during indexing.
-- The system is macOS or Linux. Windows is not supported yet.
+- The system is macOS, Linux or Windows. On Windows use PowerShell, call the binary `enigma-mcp.exe`, and set a
+  variable with `$env:NAME = "value"` on its own line before the command.
 
 Then run these in order. `<vault>` is the path the user gave you.
 

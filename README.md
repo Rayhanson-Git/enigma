@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/MCP%20tools-25-3D6BE0" alt="25 MCP tools">
   <img src="https://img.shields.io/badge/tests-507-3D6BE0" alt="507 tests">
   <img src="https://img.shields.io/badge/retrieval%20MRR-1.00-3D6BE0" alt="Retrieval MRR 1.00 on the fixture set">
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows%20soon-101A3E" alt="macOS and Linux; Windows coming soon">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-101A3E" alt="macOS, Linux and Windows">
 </p>
 
 <p align="center">
@@ -67,12 +67,13 @@ counts at each moment. Note titles are hidden.</sub></p>
 
 ### Status
 
-Version 1.2.1. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
-Built and tested on macOS (Apple silicon) and on Linux: every push is linted, tested and built on both by
+Version 1.3.0. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
+Built and tested on macOS (Apple silicon), Linux and Windows: every push is linted, tested and built on all three by
 [GitHub Actions](https://github.com/Rayhanson-Git/enigma/actions). Daily use so far has been on macOS only.
 Scheduling uses launchd, so the `schedule` command is macOS only.
 
-> **Windows: coming soon.** Enigma does not build on Windows yet. Support is the next item on the roadmap.
+> **Windows is new in 1.3.0.** It builds and passes its tests on GitHub's Windows machines, but it has not yet been
+> used day to day on a Windows PC. Please open an issue for anything that behaves differently there.
 
 The organizer and the Librarian change files. Run them with `--dry-run` first; the Librarian refuses its first real
 run on a vault until you have done so.
@@ -404,6 +405,30 @@ In a new agent session, call the `onboard` tool first.
 The same commands apply. The test suite passes on Ubuntu in CI.
 The `schedule` command is macOS only; on Linux, run `enigma-mcp librarian <vault>` from cron or a systemd timer.
 
+### Windows
+
+The steps are the same, typed in PowerShell. Three things differ:
+
+- Rust needs the Visual Studio Build Tools (the "Desktop development with C++" workload), which the Rust installer
+  offers to set up.
+- The program is `.\target\release\enigma-mcp.exe`, and a variable is set on its own line before the command.
+- The `schedule` command is macOS only; run `enigma-mcp.exe librarian <vault>` from Task Scheduler.
+
+```powershell
+git clone https://github.com/Rayhanson-Git/enigma
+cd enigma
+cargo build --release
+pip install -U huggingface_hub; hf download TaylorAI/bge-micro-v2 config.json tokenizer.json model.safetensors
+.\target\release\enigma-mcp.exe install-conventions "C:\path\to\vault"
+$env:ENIGMA_VAULT_PATH = "C:\path\to\vault"
+.\target\release\enigma-mcp.exe mcp-sync --check
+.\target\release\enigma-mcp.exe skill-sync
+$env:ENIGMA_EXTRACTOR = "claude"
+.\target\release\enigma-mcp.exe index "C:\path\to\vault"
+```
+
+Note paths are written with `/` inside Enigma on every system, so a note is `Claude/Index.md` on Windows too.
+
 ## MCP client configuration
 
 The server is the binary with no arguments. It reads its settings from environment variables and needs one:
@@ -616,7 +641,7 @@ spec/         the behaviour specification the code is written from
   acceptance/   one file of acceptance cases per area
   constitution/ the vault guides installed by install-conventions
   fixtures/     the fixture vault and golden queries used by tests and evals
-tests/        507 tests, one file per area of the specification
+tests/        508 tests, one file per area of the specification
 docs/         architecture and other guides
 AGENTS.md     setup instructions for AI agents
 assets/       logo and diagrams

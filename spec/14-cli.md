@@ -14,7 +14,7 @@ subcommand; without a subcommand it is the MCP server.
 | Topic | Rule |
 |---|---|
 | no subcommand | Run the stdio MCP server (01, 02). Closing stdin ends it with exit 0. |
-| `--version`, `-V` | Print `enigma-mcp {VERSION}` + LF to stdout, nothing to stderr, exit 0. VERSION is the Cargo.toml package version (today `enigma-mcp 1.2.1`). Never reads the environment, loads the model, opens a vault or creates a state dir. |
+| `--version`, `-V` | Print `enigma-mcp {VERSION}` + LF to stdout, nothing to stderr, exit 0. VERSION is the Cargo.toml package version (today `enigma-mcp 1.3.0`). Never reads the environment, loads the model, opens a vault or creates a state dir. |
 | `--help`, `-h` | Print usage to stdout naming the binary and every subcommand of §2; exit 0. Each subcommand also accepts `--help`. |
 | usage errors | Unknown subcommand or flag, missing or malformed argument (except the missing VAULT of `index-nightly` and `install-conventions`, which exit 1 as written in §2), or a rule below marked *usage error*: usage text on stderr ending with the line `enigma-mcp {subcommand}: error: {message}` (`enigma-mcp: error: …` at top level), nothing on stdout, exit 2. The usage text itself is not normative; the message is where this spec writes it. |
 | other failures | Unless a subcommand says otherwise, an error ends the command with stderr `error: {Kind}: {message}` + LF (kind display name of 00 §5) and exit 1. |
@@ -175,6 +175,6 @@ never checks the vault and reports every plugin missing.
 ## 4. Sanity case
 
 `enigma-mcp --version` with no environment at all prints exactly
-`enigma-mcp 1.2.1` + LF and exits 0 (SN-01, SN-04). It is the first check of
+`enigma-mcp 1.3.0` + LF and exits 0 (SN-01, SN-04). It is the first check of
 every build and replaces the reference's import smoke test; the handshake and
 smoke call of SN-05/SN-06 replace its probe script.

@@ -225,7 +225,7 @@ fn evals_ev_14() {
     assert_eq!(line["ts"], "2026-07-09T12:00:00");
     assert_eq!(line["mrr"], 1.0);
     assert_eq!(line["vault"], json!(d.path().join("Notes").join("..").display().to_string()));
-    assert_eq!(line["golden"], "g/golden.yaml");
+    assert_eq!(line["golden"], json!(Path::new("g").join("golden.yaml").display().to_string()));
     assert!(line["git"].is_string() || line["git"].is_null());
 }
 

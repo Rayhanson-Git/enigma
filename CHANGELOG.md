@@ -1,7 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.3.0
 
+- **Windows support.** Enigma builds and passes its tests on Windows as well as macOS and Linux. Behaviour on
+  macOS and Linux is unchanged.
+- On Windows: the vault path is shown without the `\\?\` prefix; paths inside `Claude/` and the `.md` ending are
+  matched in any case; access-denied, sharing and lock violations are retried as lock errors; programs are found
+  through `PATHEXT`, so a `claude.cmd` or `codex.cmd` works as the extractor; `mcp-sync` prints commands with
+  Windows quoting; the owner name comes from the account's display name.
+- `schedule` stays macOS only. On Windows it says so at once and points to Task Scheduler.
+- Text files are checked out with LF on every system, because the binary embeds prompts, skills and guides.
+- CI runs on macOS, Ubuntu and Windows.
 - README: the graph time-lapse is now a recording of Obsidian's own graph animation on a real vault, sped up, with a live node and link counter.
   Banner, feature strip and badges use a blue scheme that matches the graph; the banner's emblem keeps the logo's
   colours. The three diagrams give each kind of part its own colour.
