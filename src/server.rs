@@ -386,7 +386,11 @@ impl Server {
                 let cap = apply.then(|| config::var("ENIGMA_MAX_MOVES").and_then(|m| m.trim().parse::<i64>().ok()).unwrap_or(0).max(0));
                 Ret::Obj(organizer::run(&v, &st, self.emb.as_ref(), apply, cap, &now)?)
             }
-            "undo_move" => Ret::Obj(mover::undo_move(&v, &state()?, a.s("path"), &now)?),
+            "undo_move" => {
+                let st = state()?;
+                let _lock = lock::acquire(&st)?;
+                Ret::Obj(mover::undo_move(&v, &st, a.s("path"), &now)?)
+            }
             "librarian_status" => Ret::Obj(librarian::status(&state()?)?),
             "recall_bundle" => match a.s("mode") {
                 "digest" => Ret::Obj(recall::digest(&v, &state()?, a.os("since"), &now)?),

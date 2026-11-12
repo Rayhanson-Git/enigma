@@ -24,4 +24,5 @@ cases:
   - {id: SV-19, then: "the embedding model is loaded before the server starts serving (warm start precedes run)"}
   - {id: SV-20, given: "sheet 'things' (name string required, when date, status enum [New]); body 'File one note per thing.'", then: "sheet_upsert(things, {name First, status New}, agent cowork) created; sheet_query(things, {when: {missing: true}})[0].name First; sheet_schema() has 'things'; row text has '(agent: cowork)' and '## Log'; the sheet_upsert input schema has an 'agent' property"}
   - {id: SV-22, given: "the SV-15 vault", then: "organize_vault(apply true) with ENIGMA_MAX_MOVES unset or 'x' moves nothing and skips Loose.md with 'move cap reached'; with ENIGMA_MAX_MOVES=1 it moves Loose.md into '02 - Orbit'"}
+  - {id: SV-23, given: "another maintenance run holds the lock", then: "undo_move fails with the lock-busy message; once the lock is free it answers normally"}
   - {id: SV-21, given: "ENIGMA_NO_TOOL_APPLY=1", then: "organize_vault(apply true), consolidate_graph(apply true), index_brain(force true) each fail with a message containing 'ENIGMA_NO_TOOL_APPLY'; consolidate_graph() dry run still works"}

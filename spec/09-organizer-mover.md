@@ -247,7 +247,8 @@ match.
 
 Applying sweeps run under the caretaker lock (taken by the CLI `organize`
 without `--dry-run`, by `organize_vault(apply = true)` and by the Librarian).
-Dry runs and `undo_move` do not take it.
+The MCP tool `undo_move` takes it too, so an undo never runs in the middle of
+a sweep. Dry runs do not take it.
 
 ## 7. Edge cases (intended)
 

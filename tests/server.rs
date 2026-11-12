@@ -395,6 +395,18 @@ fn server_sv_22() {
 }
 
 #[test]
+fn server_sv_23() {
+    // undo_move waits its turn: refused while another maintenance run holds the lock
+    let (_d, state, mut m) = mv_server(&[]);
+    let held = enigma_mcp::lock::acquire(state.path()).unwrap();
+    let r = m.call("undo_move", json!({"path": "02 - Orbit/Nope.md"}));
+    assert!(is_error(&r) && text(&r).contains("another maintenance run"), "{}", text(&r));
+    drop(held);
+    assert!(text(&m.call("undo_move", json!({"path": "02 - Orbit/Nope.md"}))).contains("No undoable move"));
+    m.close();
+}
+
+#[test]
 fn server_sv_16() {
     let (_d, _s, mut m) = mv_server(&[]);
     let r = m.call("undo_move", json!({"path": "02 - Orbit/Nope.md"}));
