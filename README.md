@@ -56,7 +56,8 @@ What you get that a vector database behind an MCP wrapper does not give you:
 </p>
 
 <p align="center"><sub>A real vault growing in the order its notes were created: 2,935 nodes and 7,844 links. This is a recording of Obsidian's own
-graph animation, about three and a half minutes sped up to fourteen seconds. Note titles are hidden.</sub></p>
+graph animation, about three and a half minutes sped up to fourteen seconds. The counter shows the graph's own node and link
+counts at each moment. Note titles are hidden.</sub></p>
 
 ### Who it is for
 
