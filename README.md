@@ -52,11 +52,11 @@ What you get that a vector database behind an MCP wrapper does not give you:
 - **Nothing you cannot rebuild.** Every cache lives outside the vault and can be deleted and rebuilt from the notes.
 
 <p align="center">
-  <img src="assets/graph-timelapse.gif" alt="Time-lapse of a real vault's graph forming: 1,623 notes and 5,441 links appearing in the order they were written" width="100%">
+  <img src="assets/graph-timelapse.gif" alt="Time-lapse of a real vault's graph in Obsidian: 2,935 nodes and 7,844 links appearing in the order they were created" width="100%">
 </p>
 
-<p align="center"><sub>A real vault growing over two years: 1,623 notes and 5,441 links, in the order they were written. Each dot is a note.
-Ivory and coral are notes people and agents wrote; red, green and sand are the people, organizations, projects and topics Enigma found in them.</sub></p>
+<p align="center"><sub>A real vault in Obsidian's graph view, growing in the order its notes were created: 2,935 nodes and 7,844 links.
+The last frame is an unedited screenshot of the finished graph. Note titles are hidden.</sub></p>
 
 ### Who it is for
 
@@ -66,7 +66,7 @@ Ivory and coral are notes people and agents wrote; red, green and sand are the p
 
 ### Status
 
-Version 1.2.0. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
+Version 1.2.1. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
 Built and tested on macOS (Apple silicon) and on Linux: every push is linted, tested and built on both by
 [GitHub Actions](https://github.com/Rayhanson-Git/enigma/actions). Daily use so far has been on macOS only.
 Scheduling uses launchd, so the `schedule` command is macOS only.

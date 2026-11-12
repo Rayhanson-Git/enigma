@@ -575,7 +575,7 @@ dependencies = [
 
 [[package]]
 name = "enigma-mcp"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "candle-core",
  "candle-nn",

@@ -175,6 +175,6 @@ never checks the vault and reports every plugin missing.
 ## 4. Sanity case
 
 `enigma-mcp --version` with no environment at all prints exactly
-`enigma-mcp 1.2.0` + LF and exits 0 (SN-01, SN-04). It is the first check of
+`enigma-mcp 1.2.1` + LF and exits 0 (SN-01, SN-04). It is the first check of
 every build and replaces the reference's import smoke test; the handshake and
 smoke call of SN-05/SN-06 replace its probe script.

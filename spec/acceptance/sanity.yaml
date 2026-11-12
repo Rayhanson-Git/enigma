@@ -1,10 +1,10 @@
 # Acceptance: the binary builds, runs and reports its version (spec/14-cli.md, spec/00-overview.md,
 # spec/02-tools.md). These are the first cases any build must pass; they need no vault content except SN-05.
-# "VERSION" below is the package version in Cargo.toml ([package] version, currently 1.2.0).
+# "VERSION" below is the package version in Cargo.toml ([package] version, currently 1.2.1).
 cases:
   - id: SN-01 version flag
     when: "enigma-mcp --version"
-    then: "exit 0; stdout is exactly 'enigma-mcp VERSION' followed by one LF (today: 'enigma-mcp 1.2.0\\n'); stderr is empty"
+    then: "exit 0; stdout is exactly 'enigma-mcp VERSION' followed by one LF (today: 'enigma-mcp 1.2.1\\n'); stderr is empty"
 
   - id: SN-02 short version flag
     when: "enigma-mcp -V"
