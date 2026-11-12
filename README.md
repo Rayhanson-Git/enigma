@@ -444,7 +444,7 @@ HF_HUB_OFFLINE = "1"
 | `ENIGMA_EXTRACTOR` | `codex` | Which model command extracts entities: `codex` or `claude` |
 | `ENIGMA_EXTRACT_MODEL` | `haiku` | Model for extraction (`claude` only) |
 | `ENIGMA_CONSOLIDATE_MODEL` | `sonnet` | Model for judging duplicate entities (`claude` only) |
-| `ENIGMA_OWNER` | `the vault owner` | Owner name written into new vault guides |
+| `ENIGMA_OWNER` | your system account's full name | Owner name written into a new vault's constitution and guides |
 | `CLAUDE_SETTINGS_PATH` | `~/.claude/settings.json` | The settings file `hook-sync` reads and edits |
 | `HF_HOME`, `HF_HUB_CACHE` | Hugging Face defaults | Where the embedding model is looked up |
 

@@ -12,6 +12,7 @@
 - Error messages for dates, times and invalid UTF-8 say what is wrong in plain words.
 - Empty values and booleans print as `null`, `true` and `false`.
 - CI runs on macOS and Ubuntu.
+- `install-conventions` fills in the owner's name by itself: `ENIGMA_OWNER`, else the system account's full name.
 
 ## 1.1.0
 
