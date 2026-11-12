@@ -111,8 +111,8 @@ Spec files name which of these two renderings applies.
 | Value | display(v) |
 |---|---|
 | string | the string itself |
-| null | `None` |
-| true / false | `True` / `False` |
+| null | `null` |
+| true / false | `true` / `false` |
 | integer | decimal digits, with `-` if negative |
 | float | the float text of 16 §3.4 (`1.0`, `0.5`, `1e-05`, `inf`, `nan`) |
 | date (YAML timestamp without time) | `YYYY-MM-DD` |
@@ -145,7 +145,7 @@ Spec files name which of these two renderings applies.
   date-times nested inside lists and mappings use quoted().
 
 Examples: quoted(`weekly`) is `'weekly'`; quoted(`it's`) is `"it's"`;
-quoted(true) is `True`; display and quoted of the list `[a, 2]` are both
+quoted(true) is `true`; display and quoted of the list `[a, 2]` are both
 `['a', 2]`.
 
 ### 3.5 Timestamps
@@ -250,7 +250,7 @@ contract and tests may pin them. The file named specifies each in detail.
 | Q3 | **Consolidation-hash pruning no-op.** When the Librarian state has no `consolidation` block yet, cleanup prunes checked hashes inside a temporary empty map that is then discarded; the checked-hash part of the prune count is 0 and nothing is saved for it. | 12, 08 |
 | Q4 | **Loose frontmatter fences.** The closing fence is the first `\n---` after the opening `---`, so `\n----` or `\n---x` also closes it, and a first line such as `---x` also opens it. | 03 §6 |
 | Q5 | **Impossible YAML timestamps fail the operation.** A frontmatter scalar that matches the YAML timestamp pattern but is not a real calendar value (e.g. `2026-02-30`) makes the whole operation parsing it fail with InvalidArgument (`that day does not exist in that month`) instead of yielding `{}`. | 03 §6 |
-| Q6 | **Null displays as None.** Comparisons through display() treat a null `project` as the string `None`, so `query_notes(project="None")` matches notes with an empty `project:`. | 03 §6, 02 |
+| Q6 | **Null displays as the word null.** Comparisons through display() treat a null `project` as the string `null`, so `query_notes(project="null")` matches notes with an empty `project:`. | 03 §6, 02 |
 | Q7 | **Limit edge cases.** Early-exit loops (`query_notes`) return one row for `limit` ≤ 0; slice-style limits (`search_brain`, `context_bundle`, `list_recent`, `sheet_query`) treat a negative limit as "drop that many from the end". Each tool in 02 says which applies. | 02 §5 |
 | Q8 | **Whole-vault vector refresh on filtered search.** A search filtered by tags or folder still reads every vault note, embeds any stale one, and persists the fallback cache. | 04 §7 |
 | Q9 | **Links with `.md` are not backlinks.** `[[Postgres.md]]` is not a backlink of `Postgres.md`; only links whose last component equals the stem match. | 02 §5.18 |

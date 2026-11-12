@@ -306,7 +306,7 @@ cases:
 
   - id: MS-03 malformed manifest entry
     given: "manifest {\"servers\": [{\"name\": \"broken\", \"transport\": \"stdio\"}]}"
-    then: "stdout \"ABORT (nothing changed): manifest entry 'broken': stdio transport requires a command (or provide a url)\" + LF (the name rendered with quoted(); a missing name renders as None); exit 2; nothing run"
+    then: "stdout \"ABORT (nothing changed): manifest entry 'broken': stdio transport requires a command (or provide a url)\" + LF (the name rendered with quoted(); a missing name renders as null); exit 2; nothing run"
 
   - id: MS-04 config problems abort before anything runs
     table:
@@ -332,7 +332,7 @@ cases:
     then:
       - "a url entry compares only url: 'url: config=<quoted(config url)> manifest=<quoted(manifest url)>'"
       - "otherwise the first difference wins, in this order: command, args (list equality), then each env key of the manifest entry in manifest order; extra env keys in the config are ignored"
-      - "values are rendered with quoted() of 00 §3.4; an absent config value renders as None"
+      - "values are rendered with quoted() of 00 §3.4; an absent config value renders as null"
       - |
         config fetch args ['mcp-server-fetch@1.0.0'] gives exactly these two lines:
         DRIFTED : fetch — args: config=['mcp-server-fetch@1.0.0'] manifest=['mcp-server-fetch@2026.6.4']

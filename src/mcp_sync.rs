@@ -61,14 +61,14 @@ pub fn resolve(manifest: &Value, repo: &Path, vault: Option<&str>, exe: &Path) -
         let name = s(e.get("name"));
         let (url, command) = (s(e.get("url")), s(e.get("command")));
         if !truthy(&url) && !truthy(&command) {
-            let shown = name.as_deref().map_or("None".to_string(), crate::text::quote_str);
+            let shown = name.as_deref().map_or("null".to_string(), crate::text::quote_str);
             return Err(format!("manifest entry {shown}: stdio transport requires a command (or provide a url)"));
         }
         let args: Vec<String> = e.get("args").and_then(Value::as_array).into_iter().flatten().filter_map(|a| s(Some(a))).collect();
         let env: Vec<(String, String)> =
             e.get("env").and_then(Value::as_object).into_iter().flatten().map(|(k, v)| (k.clone(), s(Some(v)).unwrap_or_default())).collect();
         out.push(Server {
-            name: name.unwrap_or_else(|| "None".into()),
+            name: name.unwrap_or_else(|| "null".into()),
             url: url.filter(|u| !u.is_empty()).map(sub).transpose()?,
             command: command.map(sub).transpose()?,
             args: args.into_iter().map(&sub).collect::<Result<_, _>>()?,
@@ -117,7 +117,7 @@ fn read_manifest(p: &Path) -> Result<Value, Stop> {
 }
 
 fn shown(v: Option<&Value>) -> String {
-    v.map_or("None".into(), |v| quoted(&json_to_y(v)))
+    v.map_or("null".into(), |v| quoted(&json_to_y(v)))
 }
 
 /// The first difference between a config entry and a resolved server (15 §6.2).

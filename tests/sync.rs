@@ -746,7 +746,7 @@ fn sync_ms_03() {
     assert!(!s.p("claude.log").exists());
     let m = manifest(&s, json!([{"transport": "stdio"}]));
     let o = mcp(&s, &["--manifest", m.to_str().unwrap(), "--config", c.to_str().unwrap()]);
-    assert!(out(&o).contains("manifest entry None: stdio transport"));
+    assert!(out(&o).contains("manifest entry null: stdio transport"));
 }
 
 #[test]
@@ -791,8 +791,8 @@ fn sync_ms_06() {
     let d = mcp_sync::drift(&json!({"command": "uvx", "args": ["mcp-server-fetch@1.0.0"], "env": {"PYTHONIOENCODING": "utf-8"}}), &fetch);
     assert_eq!(d.as_deref(), Some("args: config=['mcp-server-fetch@1.0.0'] manifest=['mcp-server-fetch@2026.6.4']"));
     assert_eq!(mcp_sync::drift(&json!({"command": "uvx", "args": ["mcp-server-fetch@2026.6.4"], "env": {"PYTHONIOENCODING": "utf-8", "UNRELATED": "1"}}), &fetch), None);
-    assert_eq!(mcp_sync::drift(&json!({"args": []}), &fetch).as_deref(), Some("command: config=None manifest='uvx'"));
-    assert_eq!(mcp_sync::drift(&json!({"command": "uvx", "args": ["mcp-server-fetch@2026.6.4"]}), &fetch).as_deref(), Some("env[PYTHONIOENCODING]: config=None manifest='utf-8'"));
+    assert_eq!(mcp_sync::drift(&json!({"args": []}), &fetch).as_deref(), Some("command: config=null manifest='uvx'"));
+    assert_eq!(mcp_sync::drift(&json!({"command": "uvx", "args": ["mcp-server-fetch@2026.6.4"]}), &fetch).as_deref(), Some("env[PYTHONIOENCODING]: config=null manifest='utf-8'"));
     let web = srv(json!({"name": "w", "url": "https://a/mcp", "command": "ignored"}));
     assert_eq!(mcp_sync::drift(&json!({"url": "https://b/mcp", "command": "other"}), &web).as_deref(), Some("url: config='https://b/mcp' manifest='https://a/mcp'"));
     // the two report lines

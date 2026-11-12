@@ -56,7 +56,7 @@ Let FENCE be three backtick characters.
    *as list*; tags via *as list* only when truthy (else none); folder = display()
    when truthy (else none); note = display() of a truthy note, else empty.
    *as list*: null → []; string, integer, float or boolean → [display()] (so
-   `true` → `["True"]`); list → display() of each; anything else →
+   `true` → `["true"]`); list → display() of each; anything else →
    `golden {id}: '{field}' must be a string or list, got {type name}` with type
    names `dict`, `date`, `datetime`, `bytes`, `set` for mapping, date,
    date-time, binary and set values.

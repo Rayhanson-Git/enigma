@@ -191,7 +191,7 @@ JSON `{"servers": [entry …]}`; entry fields `name`, `transport` (default
 
 All three are transport `stdio`. An entry with neither a truthy `url` nor a
 truthy `command` → abort `manifest entry {quoted(name)}: stdio transport requires a command (or provide a url)`
-(a missing name renders as `None`).
+(a missing name renders as `null`).
 
 **Placeholders** in command, url, every arg and every env value (never in
 names, env keys or why; the manifest data is not modified): `{ENIGMA_BIN}` →
@@ -226,7 +226,7 @@ For each resolved entry in manifest order: name not in `mcpServers` →
 3. else `args` (list equality; absent = `[]`): `args: config={…} manifest={…}`;
 4. else each manifest env key in order: `env[{K}]: config={…} manifest={…}`.
 
-Values use quoted(); an absent config value renders `None`. Extra env keys in
+Values use quoted(); an absent config value renders `null`. Extra env keys in
 the config are ignored. No difference → *present*. *extras* = config names not
 in the manifest, sorted.
 

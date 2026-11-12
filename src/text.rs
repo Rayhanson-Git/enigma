@@ -154,8 +154,8 @@ pub fn display(v: &Y) -> String {
 
 fn scalar_text(v: &Y) -> String {
     match v {
-        Y::Null => "None".into(),
-        Y::Bool(b) => if *b { "True" } else { "False" }.into(),
+        Y::Null => "null".into(),
+        Y::Bool(b) => if *b { "true" } else { "false" }.into(),
         Y::Int(i) => i.to_string(),
         Y::Float(f) => float_text(*f),
         Y::Date(d) => date_display(d),

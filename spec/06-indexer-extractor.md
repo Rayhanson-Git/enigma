@@ -294,7 +294,7 @@ Tests inject the process runner and the PATH lookup.
 ## 6. Edge cases (intended)
 
 1. A string `aliases` value is split into single characters; a null alias
-   element becomes `None`.
+   element becomes `null`.
 2. A note listed in failures is pending even when its hash is unchanged, until
    it is benched at 3 attempts.
 3. The manifest save is not atomic.

@@ -53,7 +53,7 @@ Writes and appends to a path that is not inside Claude/ require
 '{rel}' is outside Claude/. Pass confirm_outside_claude=true only when the user explicitly asked for this write.
 ```
 
-(rel as given; the single quotes and `True` are literal.) Callers may pass
+(rel as given; the single quotes and `true` are literal.) Callers may pass
 the confirmation only when the human explicitly asked for that write. Sheets
 (10) pass it for rows in registered sheet folders.
 
@@ -187,7 +187,7 @@ without frontmatter or with an unclosed fence is returned unchanged.
 **str_list(v)**: null → `[]`; a list → each item rendered with display()
 (00 §3.4); any other value → a one-item list of display(v). Examples:
 `null` → `[]`, `one` → `["one"]`, `[a, 2]` → `["a", "2"]`, `[true]` →
-`["True"]`.
+`["true"]`.
 
 **json_safe(v)** (how frontmatter values appear in tool results): null,
 strings, integers, floats and booleans unchanged; lists element-wise; mappings

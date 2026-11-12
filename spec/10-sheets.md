@@ -51,7 +51,7 @@ The body after the frontmatter is the sheet's *instructions*.
    `columns` absent → `{folder}/_schema.md: missing '{key}'.`
 3. For each column (mapping order): the spec is not a mapping, or its `type` is
    not a column type → `{folder}/_schema.md: column '{name}' has invalid type
-   '{display() of type, None when absent}' (allowed: ['bool', 'date', 'enum',
+   '{display() of type, null when absent}' (allowed: ['bool', 'date', 'enum',
    'number', 'string', 'url']).` An enum without truthy `values` →
    `{folder}/_schema.md: enum column '{name}' needs 'values'.`
 4. `key` not a list, or `identity` present and not a list →
@@ -206,7 +206,7 @@ column to `{operator: expected}`.
 1. Validate all filters first: unknown operator → `Unknown operator '{op}'
    (allowed: ['contains', 'eq', 'gt', 'gte', 'in', 'lt', 'lte', 'missing',
    'ne', 'nin']).`; `lt lte gt gte` on a column whose type is not date/number
-   (or an unknown column) → `Column '{col}' ({type, or None}) does not support
+   (or an unknown column) → `Column '{col}' ({type, or null}) does not support
    ordering operators; only ['date', 'number'] columns do.`
 2. A row matches when every operator holds (AND):
    - `missing`: (value is null or `""`) equals truthiness of expected;

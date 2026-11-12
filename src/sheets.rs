@@ -108,8 +108,8 @@ pub fn load_schema(v: &Vault, folder: &str) -> Result<Schema> {
             };
             let Some(ty) = ty.filter(|t| TYPES.contains(&t.as_str())) else {
                 let shown = match spec {
-                    Y::Map(p) => get(p, "type").map_or("None".to_string(), display),
-                    _ => "None".to_string(),
+                    Y::Map(p) => get(p, "type").map_or("null".to_string(), display),
+                    _ => "null".to_string(),
                 };
                 return Err(err(format!(
                     "{rel}: column '{name}' has invalid type '{shown}' (allowed: {}).",
@@ -679,7 +679,7 @@ pub fn query(v: &Vault, sheet: &str, filters: Option<&Map<String, Value>>, sort:
                 if !matches!(ty.as_deref(), Some("date" | "number")) {
                     return Err(err(format!(
                         "Column '{col}' ({}) does not support ordering operators; only ['date', 'number'] columns do.",
-                        ty.unwrap_or_else(|| "None".into())
+                        ty.unwrap_or_else(|| "null".into())
                     )));
                 }
             }

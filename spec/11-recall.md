@@ -90,7 +90,7 @@ parsing errors exit 2. The session-start hook relies on this (15 §5).
 
 ## 6. Edge cases (intended)
 
-1. A frontmatter `project:` with an empty value contributes `None` to the
+1. A frontmatter `project:` with an empty value contributes `null` to the
    session haystack, so a query `none` matches it.
 2. `done_recently` uses the modification time of the note that holds the task,
    not when the task was ticked.

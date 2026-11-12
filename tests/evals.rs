@@ -121,7 +121,7 @@ fn evals_ev_07() {
     assert_eq!(q[0].expect, ["Notes/A.md"]);
     assert_eq!(q[0].accept, ["7"]);
     assert_eq!(q[0].tags, Some(vec!["x".to_string()]));
-    assert_eq!(queries("- {id: t, query: x, expect: true}\n")[0].expect, ["True"]);
+    assert_eq!(queries("- {id: t, query: x, expect: true}\n")[0].expect, ["true"]);
     let e = load_err("- id: m\n  query: x\n  expect: {a: 1}\n");
     assert_eq!(e, "golden m: 'expect' must be a string or list, got dict");
     assert!(load_err("- id: d\n  query: x\n  expect: 2026-07-09\n").ends_with("got date"));

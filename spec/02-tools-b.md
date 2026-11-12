@@ -87,7 +87,7 @@ meta = parse(text) (03 §6):
 1. If project is not null (an empty string is a real filter): skip the note
    unless casefold(display(meta["project"])) equals casefold(project), where
    a missing `project` key counts as the empty string and a null value as
-   `None` (edge case Q6).
+   `null` (edge case Q6).
 2. If tags is a non-empty list: skip the note unless the casefolded tags are
    a subset of the casefolded str_list(meta["tags"]).
 3. If project is null, tags is null or empty, and meta is empty: skip (a
