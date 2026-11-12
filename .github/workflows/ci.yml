@@ -22,7 +22,7 @@ jobs:
           HF_HUB_OFFLINE: "0"
         run: |
           python3 -m pip install --user --break-system-packages -U huggingface_hub
-          python3 -m huggingface_hub.commands.huggingface_cli download TaylorAI/bge-micro-v2
+          python3 -c "from huggingface_hub import snapshot_download; snapshot_download('TaylorAI/bge-micro-v2')"
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
       - run: cargo build --release
