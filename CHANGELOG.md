@@ -5,6 +5,9 @@
 - README: the graph time-lapse is now a recording of Obsidian's own graph animation on a real vault, sped up, with a live node and link counter.
   Banner, feature strip and badges use a blue scheme that matches the graph; the banner's emblem keeps the logo's
   colours. The three diagrams give each kind of part its own colour.
+- Diagram labels are no longer cut off at the right edge: the diagrams use the page's default font.
+- Proofread: three garbled sentences and two ungrammatical phrasings in the spec, a stale version number,
+  and a few mixed spellings.
 
 ## 1.2.1
 

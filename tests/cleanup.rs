@@ -25,7 +25,7 @@ fn ent(name: &str) -> String {
     format!("{ORGS}/{name}")
 }
 
-/// A raw organisation note with optional extra frontmatter and section lines.
+/// A raw organization note with optional extra frontmatter and section lines.
 fn note(d: &tempfile::TempDir, name: &str, extra_fm: &str, mentions: &str, relations: &str) {
     write_file(
         d.path(),

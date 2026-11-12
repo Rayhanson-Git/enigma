@@ -77,7 +77,7 @@ pub fn resolve_plain(s: &str) -> Plain {
     }
 }
 
-/// Internal construction failure: a YAML error (frontmatter becomes {}) or a
+/// Internal construction failure: a YAML error (frontmatter becomes {}) or an
 /// edge-case Q5 calendar error that fails the whole operation.
 enum Fail {
     Yaml,

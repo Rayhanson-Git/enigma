@@ -244,7 +244,7 @@ UTF-8, invalid bytes replaced), timeout 120 s.
 | exit code ≠ 0 | ExtractorError `{backend} exited {code}: {stderr summary}` (a signal death reports the negative signal number) |
 | exit 0 | stdout (empty string if none) |
 
-**stderr summary**: trim; empty → empty string. Otherwise the last lines (00 §3.2) line
+**stderr summary**: trim; empty → empty string. Otherwise the last line (00 §3.2)
 containing the word `ERROR` or `FATAL` (case-insensitive, word boundaries) —
 trimmed, first 300 characters; if none, the last 300 characters of the trimmed
 text.

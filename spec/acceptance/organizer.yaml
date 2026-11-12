@@ -19,9 +19,9 @@ cases:
   - id: OR-06 split vote
     then: candidate [0.7,0.7] -> share < 0.7
   - id: OR-07 no self vote
-    then: classifying a labeled note never lists itself as neighbor
+    then: classifying a labelled note never lists itself as a neighbour
   - id: OR-08 nothing to classify
-    then: candidate without vector -> folder none, share 0.0; no labeled notes -> folder none
+    then: candidate without vector -> folder none, share 0.0; no labelled notes -> folder none
   - id: OR-09 journal and log
     when: move "Loose Orbit Note.md" to "02 - Orbit/Loose Orbit Note.md" and record share 0.85
     then: last journal line has from/to and share 0.85; Claude/Organizer.md mentions "Loose Orbit Note" and "0.85"

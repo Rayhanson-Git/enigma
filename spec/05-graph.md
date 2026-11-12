@@ -122,7 +122,7 @@ A company.
   `## Mentions` and `## Relations`.
 - **section lines** = the lines (00 §3.2) of a section that start with `- ` (untrimmed).
 - **entity summary(text)**: take `body`; cut it at the first occurrence of
-  `## Mentions`; drop every lines (00 §3.2) line beginning `# `; join the rest with LF;
+  `## Mentions`; drop every line (00 §3.2) beginning `# `; join the rest with LF;
   trim surrounding whitespace. `# Foo\n\nLine one.\n\n---\n\nLine two.\n\n## Mentions\n…`
   → `Line one.\n\n---\n\nLine two.`.
 
@@ -143,8 +143,8 @@ resolves, and a chain needing 7 visits does not.
 ### 2.5 find_entity_note(type, name)
 
 Scan `*.md` files directly in the type's folder (not recursive) in ascending
-file-name order (absent folder → none). A file matches when its stem
-casefolds equal to `name`, or casefolds equal to `safe_filename(name)`, or
+file-name order (absent folder → none). A file matches when its casefolded
+stem equals `name` casefolded, or equals `safe_filename(name)` casefolded, or
 `name` casefolded equals one of its casefolded `str_list(aliases)`. The first
 match wins:
 
@@ -237,7 +237,7 @@ The table definitions and column meanings are specified once, in 16 §4.
      the stem;
    - aliases: `str_list(aliases)`;
    - summary: take the text after the first LF `# ` (the whole text if none);
-     skip its first line; the first remaining lines (00 §3.2) line that is not blank
+     skip its first line; the first remaining line (00 §3.2) that is not blank
      and does not start with `#`, trimmed; else empty.
 3. Mention rows from the `## Mentions` section: each trimmed line matching the
    mention regex → (entity path, group 1 trimmed, group 2 or empty).

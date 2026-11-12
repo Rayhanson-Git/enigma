@@ -4,7 +4,7 @@ This page explains how Enigma MCP is put together. The exact behaviour of every 
 this is the overview.
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart TB
   subgraph callers["Who calls it"]
     agents["Agents<br/>Claude Code, Codex, OpenClaw, Hermes"]
@@ -139,7 +139,7 @@ needs to be synced or backed up.
 ## Search
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   q(["search_brain<br/>query, tags, folder, limit"]) --> walk["Walk the vault<br/>skip .obsidian, .trash, .git"]
   walk --> filt{"Tags or folder given?"}
@@ -235,7 +235,7 @@ If any step fails, the files already changed are restored. Notes under `Claude/`
 ## The Librarian
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   start(["enigma-mcp librarian"]) --> first{"Has this vault<br/>ever had a run?"}
   first -->|"no, and no<br/>--confirm-first-run"| refuse["Stop: do a --dry-run first"]

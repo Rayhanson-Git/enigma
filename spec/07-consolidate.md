@@ -57,7 +57,7 @@ something was embedded and `persist` is true, save the cache. `persist = false`
 removes them and saves when that number is > 0.
 
 The embedder is the one defined in 04-search: model `TaylorAI/bge-micro-v2`
-(BERT, 3 layers, hidden size 384), uncased WordPiece tokenisation (lower-case,
+(BERT, 3 layers, hidden size 384), uncased WordPiece tokenization (lower-case,
 accents stripped, CJK characters split), at most 512 tokens including
 `[CLS]`/`[SEP]` with truncation on the right, **mean pooling** over the
 attention mask, **no** L2 normalisation (the model's `modules.json` lists only

@@ -267,7 +267,7 @@ Inputs: name, content.
 1. filename = safe_filename(name) + `.md`.
 2. **Lookup**: if `Claude/Concepts` resolves to a directory, scan its direct
    entries in path order and return `Claude/Concepts/{entry}` for the first
-   entry whose name casefolds equal to filename casefolded; otherwise none.
+   entry whose casefolded name equals filename casefolded; otherwise none.
 3. If lookup found none: rel = `Claude/Concepts/{filename}`; create-only write
    of frontmatter(project empty, tags `[concept]`, now, agent name) +
    `# {name}\n\n{content}\n` (name raw). On success return rel. On NoteExists

@@ -80,7 +80,7 @@ run on a vault until you have done so.
 ## Architecture
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart TB
   subgraph callers["Who calls it"]
     agents["Agents<br/>Claude Code, Codex, OpenClaw, Hermes"]
@@ -205,7 +205,7 @@ More detail is in [docs/architecture.md](docs/architecture.md).
 ### How search works
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   q(["search_brain<br/>query, tags, folder, limit"]) --> walk["Walk the vault<br/>skip .obsidian, .trash, .git"]
   walk --> filt{"Tags or folder given?"}
@@ -260,7 +260,7 @@ single character or a query made of punctuation.
 ### The nightly run
 
 ```mermaid
-%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"fontFamily": "-apple-system, Segoe UI, Helvetica, Arial, sans-serif", "primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
+%%{init: {"theme": "base", "flowchart": {"curve": "basis"}, "themeVariables": {"primaryColor": "#101A3E", "primaryTextColor": "#F2F5FF", "primaryBorderColor": "#6FA0FF", "lineColor": "#7C9BEA", "clusterBkg": "#070B22", "clusterBorder": "#3D6BE0", "titleColor": "#C9D6FF", "edgeLabelBackground": "#070B22", "tertiaryTextColor": "#E6ECFF"}}}%%
 flowchart LR
   start(["enigma-mcp librarian"]) --> first{"Has this vault<br/>ever had a run?"}
   first -->|"no, and no<br/>--confirm-first-run"| refuse["Stop: do a --dry-run first"]
@@ -581,7 +581,7 @@ answers are known:
 | success@5 | success@10 | MRR |
 |---|---|---|
 | 0.97 | 1.00 | 0.84 |
- For your own vault, create a private golden set with `enigma-mcp evals --init-live --vault <vault>` and
+For your own vault, create a private golden set with `enigma-mcp evals --init-live --vault <vault>` and
 run `enigma-mcp evals --live`.
 
 ### Speed
