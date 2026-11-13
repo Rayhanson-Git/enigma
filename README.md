@@ -67,7 +67,7 @@ counts at each moment. Note titles are hidden.</sub></p>
 
 ### Status
 
-Version 1.3.0. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
+Version 1.3.1. Used daily on one private vault of about 1,570 notes with four agent harnesses connected at once.
 Built and tested on macOS (Apple silicon), Linux and Windows: every push is linted, tested and built on all three by
 [GitHub Actions](https://github.com/Rayhanson-Git/enigma/actions). Daily use so far has been on macOS only.
 Scheduling uses launchd, so the `schedule` command is macOS only.

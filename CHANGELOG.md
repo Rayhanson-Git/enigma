@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.1
 
 - `related_notes` and `context_bundle` stop as soon as there is nothing left to follow, so a very large `hops`
   value returns at once. Results are unchanged.
