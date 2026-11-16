@@ -52,12 +52,12 @@ What you get that a vector database behind an MCP wrapper does not give you:
 - **Nothing you cannot rebuild.** Every cache lives outside the vault and can be deleted and rebuilt from the notes.
 
 <p align="center">
-  <img src="assets/graph-timelapse.gif" alt="Time-lapse recording of Obsidian's graph view animating a real vault: 2,935 nodes and 7,844 links appearing in the order they were created" width="100%">
+  <img src="assets/graph-growth.webp" alt="Animation of a real vault's graph growing in the order its files were created, to 3,026 nodes and 8,047 links" width="100%">
 </p>
 
-<p align="center"><sub>A real vault growing in the order its notes were created: 2,935 nodes and 7,844 links. This is a recording of Obsidian's own
-graph animation, about three and a half minutes sped up to fourteen seconds. The counter shows the graph's own node and link
-counts at each moment. Note titles are hidden.</sub></p>
+<p align="center"><sub>A real vault growing in the order its files were created: 3,026 nodes and 8,047 links. It is drawn from the
+vault's own links, with the same kinds of nodes Obsidian's graph shows: 1,751 notes, 1,256 attachments and 19 notes linked but
+not yet written. The counter shows the node and link counts at each moment. Note titles are left out.</sub></p>
 
 ### Who it is for
 
