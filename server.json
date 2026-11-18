@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Rayhanson-Git/enigma",
+  "title": "Enigma MCP",
+  "description": "Shared long-term memory for AI agents, kept as Markdown notes in an Obsidian vault.",
+  "websiteUrl": "https://rayhanson.tech/projects/enigma/",
+  "repository": {
+    "url": "https://github.com/Rayhanson-Git/enigma",
+    "source": "github"
+  },
+  "version": "1.3.1",
+  "packages": [
+    {
+      "registryType": "cargo",
+      "registryBaseUrl": "https://crates.io",
+      "identifier": "enigma-mcp",
+      "version": "1.3.1",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "ENIGMA_VAULT_PATH", "description": "Absolute path to the Obsidian vault", "isRequired": true },
+        { "name": "ENIGMA_AGENT_NAME", "description": "Name recorded on every note this agent writes", "isRequired": false }
+      ]
+    }
+  ]
+}
