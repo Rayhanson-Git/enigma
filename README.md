@@ -715,3 +715,7 @@ no coordinator to run.
 ## Licence
 
 [MIT](LICENSE). Made by Harvey Rayhanson (Rayhanson-Git).
+
+Listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as:
+
+mcp-name: io.github.Rayhanson-Git/enigma
