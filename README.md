@@ -6,6 +6,8 @@
 
 <p align="center"><b>One memory for all your AI agents, kept as plain notes in your Obsidian vault.</b></p>
 
+<p align="center"><sub>This project was inspired by <a href="https://github.com/DeepExtrema/tesseract">Tesseract MCP</a> by DeepExtrema.</sub></p>
+
 <p align="center">
   <a href="https://github.com/Rayhanson-Git/enigma/actions/workflows/ci.yml"><img src="https://github.com/Rayhanson-Git/enigma/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/license-MIT-6FA0FF" alt="MIT licence">
