@@ -16,6 +16,7 @@
   <img src="https://img.shields.io/badge/tests-512-3D6BE0" alt="512 tests">
   <img src="https://img.shields.io/badge/retrieval%20MRR-1.00-3D6BE0" alt="Retrieval MRR 1.00 on the fixture set">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-101A3E" alt="macOS, Linux and Windows">
+  <a href="https://glama.ai/mcp/servers/Rayhanson-Git/enigma"><img src="https://glama.ai/mcp/servers/Rayhanson-Git/enigma/badges/score.svg" alt="Enigma MCP on Glama"></a>
 </p>
 
 <p align="center">
